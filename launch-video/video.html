@@ -1,0 +1,406 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Asematic Launch Video</title>
+<style>
+  html, body { margin: 0; background: #000; height: 100%; }
+  canvas { display: block; width: 100vw; height: 56.25vw; max-height: 100vh; max-width: 177.78vh; margin: auto; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Deterministic 10s launch animation for Asematic Technologies.
+// render(t) draws the frame at time t (seconds); the renderer calls it per frame.
+const W = 1920, H = 1080, CX = W / 2, CY = H / 2, DURATION = 10;
+const SCALE = 2; // 3840x2160 output
+const canvas = document.getElementById('c');
+canvas.width = W * SCALE; canvas.height = H * SCALE;
+const ctx = canvas.getContext('2d');
+
+const COLORS = {
+  bg: '#03050d',
+  blue: [47, 107, 255],
+  violet: [139, 92, 246],
+  cyan: [96, 165, 250],
+};
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (a, b, t) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const easeOutCubic = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeInOutCubic = x => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const easeOutExpo = x => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * clamp(x)));
+const easeInCubic = x => Math.pow(clamp(x), 3);
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rand = mulberry32(20261012);
+
+// ---------- scene data ----------
+const FOCAL = 900, DEPTH = 3200;
+const particles = Array.from({ length: 280 }, () => ({
+  x: (rand() * 2 - 1) * 1700,
+  y: (rand() * 2 - 1) * 1000,
+  z: rand() * DEPTH,
+  size: 0.8 + rand() * 1.9,
+  hue: rand(),
+  appear: 0.1 + rand() * 1.3,
+  phase: rand() * Math.PI * 2,
+}));
+const trails = Array.from({ length: 20 }, (_, i) => ({
+  a0: (i / 20) * Math.PI * 2 + rand() * 0.3,
+  r: 380 + rand() * 520,
+  twist: 1.6 + rand() * 1.6 * (i % 2 ? 1 : -1),
+  spin: 0.25 + rand() * 0.35,
+  speed: 0.55 + rand() * 0.45,
+  off: rand(),
+  hue: i % 3 === 0 ? 1 : rand() * 0.6,
+  width: 1.2 + rand() * 1.8,
+}));
+const structures = Array.from({ length: 7 }, (_, i) => ({
+  z: 900 + i * 480,           // world z relative to camera at t=2s
+  sides: i % 2 ? 6 : 3,       // triangles echo the "A" mark
+  r: 520 + (i % 3) * 140,
+  rot: i * 0.55,
+  dir: i % 2 ? 1 : -1,
+}));
+
+// Camera travel: slow drift, fly-through in scene 2, settle for the reveal.
+function speed(t) { return 70 + 1150 * smooth(1.85, 2.9, t) * (1 - smooth(3.9, 4.9, t)); }
+const camTable = (() => { const out = [0]; let z = 0; const dt = 1 / 480; for (let i = 1; i <= DURATION * 480 + 2; i++) { z += speed(i * dt) * dt; out.push(z); } return out; })();
+const camZ = t => camTable[Math.min(camTable.length - 1, Math.max(0, Math.round(t * 480)))];
+
+// Film grain tiles (dither against gradient banding).
+const grain = Array.from({ length: 6 }, () => {
+  const g = document.createElement('canvas'); g.width = g.height = 256;
+  const gx = g.getContext('2d'); const img = gx.createImageData(256, 256);
+  for (let i = 0; i < img.data.length; i += 4) { const v = rand() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+  gx.putImageData(img, 0, 0); return g;
+});
+
+let MARK, LOCKUP, lockupLayer, wordLayer;
+const MARK_FRAC = 404 / 1504; // mark width as a fraction of the lockup image width
+
+function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+async function init(assets = { mark: 'assets/mark-dark.png', lockup: 'assets/lockup-dark.png' }) {
+  [MARK, LOCKUP] = await Promise.all([loadImg(assets.mark), loadImg(assets.lockup)]);
+  lockupLayer = document.createElement('canvas');
+  lockupLayer.width = 1400 * SCALE; lockupLayer.height = 400 * SCALE;
+  wordLayer = document.createElement('canvas');
+  wordLayer.width = 1400 * SCALE; wordLayer.height = 400 * SCALE;
+  await document.fonts.load('300 64px "Inter"');
+  await document.fonts.load('500 26px "Inter"');
+  return true;
+}
+
+// ---------- drawing ----------
+function drawBackground(t) {
+  ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, W, H);
+  const k = smooth(0.0, 2.0, t) * 0.75 + smooth(4.6, 5.4, t) * 0.25;
+  const blobs = [
+    { x: CX + Math.cos(t * 0.35) * 520, y: CY + Math.sin(t * 0.42) * 260, r: 900, c: [29, 78, 216], a: 0.34 },
+    { x: CX + Math.cos(t * 0.3 + 2.1) * 600, y: CY + Math.sin(t * 0.37 + 1.3) * 300, r: 850, c: [109, 40, 217], a: 0.30 },
+    { x: CX + Math.cos(t * 0.25 + 4.0) * 420, y: CY + 260 + Math.sin(t * 0.3) * 120, r: 700, c: [49, 46, 129], a: 0.40 },
+  ];
+  ctx.globalCompositeOperation = 'lighter';
+  for (const b of blobs) {
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    g.addColorStop(0, rgba(b.c, b.a * k)); g.addColorStop(1, rgba(b.c, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function project(x, y, z) { const s = FOCAL / z; return [CX + x * s, CY + y * s, s]; }
+
+function drawParticles(t) {
+  const cz = camZ(t);
+  const network = smooth(0.3, 1.8, t) * (1 - 0.55 * smooth(4.2, 5.0, t)) * (1 - 0.25 * smooth(1.9, 2.6, t));
+  const sway = Math.sin(t * 0.6) * 40;
+  const pts = [];
+  for (const p of particles) {
+    const vis = smooth(p.appear, p.appear + 0.6, t);
+    if (vis <= 0) continue;
+    let z = ((p.z - cz) % DEPTH + DEPTH) % DEPTH + 60;
+    const depthFade = smooth(60, 300, z) * (1 - smooth(DEPTH - 700, DEPTH, z));
+    const [sx, sy, s] = project(p.x + sway, p.y + Math.sin(t * 0.8 + p.phase) * 18, z);
+    if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200) continue;
+    const twinkle = 0.75 + 0.25 * Math.sin(t * 3 + p.phase * 3);
+    pts.push({ sx, sy, z, s, a: vis * depthFade * twinkle, c: mix(COLORS.blue, COLORS.violet, p.hue), size: p.size });
+  }
+  // Connection lines
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineWidth = 1;
+  const R = 150 + 60 * (1 - smooth(1.8, 2.6, t));
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    for (let j = i + 1; j < pts.length; j++) {
+      const b = pts[j];
+      if (Math.abs(a.z - b.z) > 700) continue;
+      const dx = a.sx - b.sx, dy = a.sy - b.sy, d2 = dx * dx + dy * dy;
+      if (d2 > R * R) continue;
+      const al = (1 - Math.sqrt(d2) / R) * Math.min(a.a, b.a) * 0.8 * network;
+      if (al < 0.01) continue;
+      ctx.strokeStyle = rgba(mix(a.c, b.c, 0.5), al);
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
+  }
+  // Glowing nodes
+  for (const p of pts) {
+    const r = Math.max(0.6, p.size * p.s * 1.6);
+    const g = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, r * 6);
+    g.addColorStop(0, rgba(p.c, 0.5 * p.a)); g.addColorStop(1, rgba(p.c, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.sx, p.sy, r * 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(225,235,255,${0.9 * p.a})`;
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawStructures(t) {
+  const vis = smooth(1.85, 2.4, t) * (1 - smooth(3.9, 4.5, t));
+  if (vis <= 0) return;
+  const travel = camZ(t) - camZ(2.0);
+  ctx.globalCompositeOperation = 'lighter';
+  for (const s of structures) {
+    const z = s.z - travel;
+    if (z < 40) continue;
+    const fade = smooth(40, 350, z) * (1 - smooth(2600, 3400, z)) * vis;
+    if (fade <= 0) continue;
+    const rot = s.rot + t * 0.35 * s.dir;
+    const pts = [];
+    for (let k = 0; k < s.sides; k++) {
+      const ang = rot + (k / s.sides) * Math.PI * 2 - Math.PI / 2;
+      pts.push(project(Math.cos(ang) * s.r, Math.sin(ang) * s.r, z));
+    }
+    const c = s.sides === 3 ? COLORS.blue : COLORS.violet;
+    for (const [lw, al] of [[6, 0.08], [1.4, 0.55]]) {
+      ctx.lineWidth = lw * Math.min(3, FOCAL / z);
+      ctx.strokeStyle = rgba(c, al * fade);
+      ctx.beginPath(); pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.stroke();
+    }
+    // vertex nodes
+    for (const [x, y] of pts) { ctx.fillStyle = `rgba(220,230,255,${0.7 * fade})`; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawTrails(t) {
+  const vis = smooth(1.8, 2.4, t) * (1 - smooth(4.9, 5.15, t));
+  if (vis <= 0) return;
+  const conv = easeInCubic(smooth(3.95, 4.95, t));
+  const SEG = 70;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (const tr of trails) {
+    const head = 1 - ((t * tr.speed + tr.off) % 1.4) / 1.4; // pulse travels toward camera
+    const pts = [];
+    for (let i = 0; i <= SEG; i++) {
+      const s = i / SEG;
+      const z = 120 + s * 2800;
+      const ang = tr.a0 + tr.twist * s + t * tr.spin;
+      const r = tr.r * (1 - 0.15 * s);
+      let [x, y] = project(Math.cos(ang) * r, Math.sin(ang) * r * 0.62, z);
+      const k = clamp(conv * (1.25 - 0.25 * s));
+      x = lerp(x, CX, k); y = lerp(y, CY, k);
+      pts.push([x, y, s]);
+    }
+    const c = mix(COLORS.blue, COLORS.violet, tr.hue);
+    for (let i = 0; i < SEG; i++) {
+      const [x1, y1, s] = pts[i], [x2, y2] = pts[i + 1];
+      const pulse = Math.exp(-Math.pow((s - head) / 0.09, 2));
+      const base = 0.1 + 0.25 * conv;
+      const al = (base + 0.9 * pulse) * (1 - smooth(0.75, 1, s)) * vis;
+      if (al < 0.01) continue;
+      const w = tr.width * (2.2 - 1.6 * s);
+      ctx.strokeStyle = rgba(c, al * 0.18); ctx.lineWidth = w * 7;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.strokeStyle = rgba(mix(c, [235, 240, 255], 0.5 * pulse), al); ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+  }
+  // gathering core at the convergence point
+  const core = smooth(4.2, 4.95, t) * (1 - smooth(4.95, 5.5, t));
+  if (core > 0) {
+    const r = 40 + 220 * core;
+    const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, r);
+    g.addColorStop(0, `rgba(235,240,255,${0.9 * core})`); g.addColorStop(0.3, rgba(COLORS.blue, 0.5 * core)); g.addColorStop(1, rgba(COLORS.violet, 0));
+    ctx.fillStyle = g; ctx.fillRect(CX - r, CY - r, r * 2, r * 2);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawFlash(t) {
+  const k = 1 - smooth(4.95, 5.7, t);
+  if (t < 4.95 || k <= 0) return;
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, 1100);
+  g.addColorStop(0, `rgba(210,225,255,${0.55 * k})`); g.addColorStop(0.35, rgba(COLORS.blue, 0.25 * k)); g.addColorStop(1, rgba(COLORS.violet, 0));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // shockwave ring
+  const p = easeOutCubic(smooth(4.95, 5.9, t));
+  const rr = 60 + 1100 * p;
+  ctx.lineWidth = 2 + 10 * (1 - p);
+  ctx.strokeStyle = rgba(COLORS.cyan, 0.6 * (1 - p));
+  ctx.beginPath(); ctx.ellipse(CX, CY, rr, rr * 0.92, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawText(str, { y, size, weight = 300, alpha, blur = 0, spacing = 0, fill = 'white', family = 'Inter' }) {
+  if (alpha <= 0.003) return;
+  ctx.save();
+  ctx.font = `${weight} ${size}px "${family}"`;
+  ctx.letterSpacing = `${spacing}px`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.globalAlpha = alpha;
+  if (blur > 0.2) ctx.filter = `blur(${blur}px)`;
+  // letterSpacing adds trailing space after the last glyph; shift to stay optically centred
+  const x = CX + spacing / 2;
+  if (typeof fill === 'function') ctx.fillStyle = fill(ctx.measureText(str).width, x, y); else ctx.fillStyle = fill;
+  ctx.shadowColor = 'rgba(80,120,255,0.55)'; ctx.shadowBlur = 24;
+  ctx.fillText(str, x, y);
+  ctx.restore();
+}
+
+function headline(str, t, tIn, tOut) {
+  const a = smooth(tIn, tIn + 0.55, t) * (1 - smooth(tOut, tOut + 0.3, t));
+  const inK = easeOutCubic(smooth(tIn, tIn + 0.7, t));
+  const outK = smooth(tOut, tOut + 0.3, t);
+  if (a > 0) {
+    const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, 520);
+    g.addColorStop(0, `rgba(3,5,13,${0.55 * a})`); g.addColorStop(1, 'rgba(3,5,13,0)');
+    ctx.save(); ctx.translate(CX, CY); ctx.scale(1, 0.32); ctx.translate(-CX, -CY);
+    ctx.fillStyle = g; ctx.fillRect(CX - 520, CY - 520, 1040, 1040); ctx.restore();
+  }
+  drawText(str, {
+    y: CY + (1 - inK) * 18 - outK * 10,
+    size: 68, weight: 300, alpha: a,
+    blur: (1 - inK) * 14 + outK * 10,
+    spacing: lerp(14, 1, inK) + outK * 8,
+    fill: (w, x, y) => { const g = ctx.createLinearGradient(x - w / 2, y, x + w / 2, y); g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#e6ecff'); g.addColorStop(1, '#b9c8ff'); return g; },
+  });
+}
+
+function drawLogo(t) {
+  if (t < 4.95) return;
+  // Lockup geometry
+  const finalW = 1120, finalH = finalW * (LOCKUP.height / LOCKUP.width);
+  const markW = finalW * MARK_FRAC, markH = finalH;
+  const lift = easeInOutCubic(smooth(6.85, 7.6, t));
+  const push = 1 + 0.035 * smooth(7.0, 10.0, t);
+  const cy = lerp(CY, CY - 100, lift);
+  const lockX = CX - finalW / 2;
+  // Mark: centred pop-in, then slides into lockup position
+  const pop = easeOutExpo(smooth(4.95, 5.6, t));
+  const slide = easeInOutCubic(smooth(5.55, 6.35, t));
+  const markX = lerp(CX - markW / 2, lockX, slide);
+  const markScale = lerp(1.25, 1, pop);
+  const wipe = easeInOutCubic(smooth(5.95, 6.75, t));
+
+  const L = lockupLayer, lx = L.getContext('2d');
+  lx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  lx.clearRect(0, 0, 1400, 400);
+  const ox = 100, oy = 200 - markH / 2; // layer-local origin of lockup
+  const mcx = (markX - lockX) + ox + markW / 2;
+  lx.globalAlpha = pop;
+  lx.drawImage(MARK, mcx - markW * markScale / 2, 200 - markH * markScale / 2, markW * markScale, markH * markScale);
+  lx.globalAlpha = 1;
+  // Wordmark wipe (left to right) from the official lockup
+  if (wipe > 0) {
+    const srcX = LOCKUP.width * MARK_FRAC, srcW = LOCKUP.width - srcX;
+    const dstX = ox + markW, dstW = finalW - markW;
+    const wx = wordLayer.getContext('2d');
+    wx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+    wx.globalCompositeOperation = 'source-over';
+    wx.clearRect(0, 0, 1400, 400);
+    wx.drawImage(LOCKUP, srcX, 0, srcW, LOCKUP.height, dstX - (1 - wipe) * 30, oy, dstW, finalH);
+    const edge = dstX + (dstW + 120) * wipe;
+    const mask = wx.createLinearGradient(edge - 120, 0, edge, 0);
+    mask.addColorStop(0, 'rgba(0,0,0,1)'); mask.addColorStop(1, 'rgba(0,0,0,0)');
+    wx.globalCompositeOperation = 'destination-in';
+    wx.fillStyle = mask; wx.fillRect(0, 0, 1400, 400);
+    lx.drawImage(wordLayer, 0, 0, 1400, 400);
+  }
+  // Specular light sweep across the finished lockup
+  const sweep = smooth(6.7, 7.6, t);
+  if (sweep > 0 && sweep < 1) {
+    lx.save(); lx.globalCompositeOperation = 'source-atop';
+    const sx = lerp(-200, 1500, sweep);
+    const g = lx.createLinearGradient(sx - 120, 0, sx + 120, 60);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    lx.fillStyle = g; lx.fillRect(0, 0, 1400, 400); lx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(CX, CY); ctx.scale(push, push); ctx.translate(-CX, -CY);
+  const dx = lockX - ox, dy = cy - 200;
+  // halo
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.45 + 0.1 * Math.sin(t * 2.2);
+  ctx.filter = 'blur(28px)';
+  ctx.drawImage(L, dx, dy, 1400, 400);
+  ctx.filter = 'none'; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(L, dx, dy, 1400, 400);
+  ctx.restore();
+
+  // Scene 4 supporting lines
+  const yBase = cy + finalH / 2 * push;
+  const a1 = smooth(7.25, 7.85, t), k1 = easeOutCubic(smooth(7.25, 8.0, t));
+  ctx.save(); ctx.translate(CX, CY); ctx.scale(push, push); ctx.translate(-CX, -CY);
+  drawText('Engineering What’s Next.', { y: yBase + 100 + (1 - k1) * 14, size: 54, weight: 300, alpha: a1, blur: (1 - k1) * 8, spacing: 1.5 });
+  const a2 = smooth(7.6, 8.2, t), k2 = easeOutCubic(smooth(7.6, 8.35, t));
+  drawText('asematic.com', {
+    y: yBase + 185 + (1 - k2) * 10, size: 34, weight: 500, alpha: a2, blur: (1 - k2) * 6, spacing: lerp(14, 8, k2),
+    fill: (w, x, y) => { const g = ctx.createLinearGradient(x - w / 2, y, x + w / 2, y); g.addColorStop(0, '#6ea0ff'); g.addColorStop(1, '#b49bff'); return g; },
+  });
+  // hairline divider
+  const dv = easeInOutCubic(smooth(7.45, 8.2, t));
+  if (dv > 0) {
+    const g = ctx.createLinearGradient(CX - 160, 0, CX + 160, 0);
+    g.addColorStop(0, 'rgba(110,160,255,0)'); g.addColorStop(0.5, `rgba(150,170,255,${0.7 * dv})`); g.addColorStop(1, 'rgba(180,155,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(CX - 160 * dv, yBase + 145, 320 * dv, 1.5);
+  }
+  ctx.restore();
+}
+
+function drawVignette(t) {
+  const g = ctx.createRadialGradient(CX, CY, H * 0.35, CX, CY, H * 1.05);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.65)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // fade up from black at the very start
+  const black = 1 - smooth(0, 0.5, t);
+  if (black > 0) { ctx.fillStyle = `rgba(0,0,0,${black})`; ctx.fillRect(0, 0, W, H); }
+}
+
+function drawGrain(frame) {
+  ctx.save();
+  ctx.globalAlpha = 0.045; ctx.globalCompositeOperation = 'overlay';
+  ctx.fillStyle = ctx.createPattern(grain[frame % grain.length], 'repeat');
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+function render(t, frame = Math.round(t * 24)) {
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  drawBackground(t);
+  drawStructures(t);
+  drawParticles(t);
+  drawTrails(t);
+  drawFlash(t);
+  headline('The Future Is Being Built.', t, 0.55, 1.75);
+  headline('Ideas Into Innovation.', t, 2.3, 3.75);
+  drawLogo(t);
+  drawVignette(t);
+  drawGrain(frame);
+}
+
+window.init = init; window.render = render; window.canvas = canvas;
+// Opened directly in a browser: play a live preview loop.
+if (!navigator.webdriver) init().then(() => { const t0 = performance.now(); (function loop() { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); })(); });
+</script>
+</body>
+</html>
