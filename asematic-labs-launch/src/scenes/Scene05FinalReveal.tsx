@@ -31,8 +31,8 @@ export const Scene05FinalReveal: React.FC<Props> = ({ headline, support, launchL
   const markDraw = progress(frame, 8, 26, EASE.inOut);
   const markFill = progress(frame, 18, 32, EASE.soft);
 
-  const head = progress(frame, 30, 48);
-  const sup = progress(frame, 40, 56);
+  const head = progress(frame, 20, 38);
+  const sup = progress(frame, 34, 52);
   const label = progress(frame, 46, 60);
   const par = progress(frame, 52, 66);
 

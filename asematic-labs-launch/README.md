@@ -5,7 +5,7 @@ by Asematic Technologies Private Limited. Built entirely in code with Remotion, 
 vector graphics, UI mockups, synthesized score and sound design, and a locally generated voice-over.
 
 **Final render:** [`asematic-labs-launch.mp4`](asematic-labs-launch.mp4): H.264 High, yuv420p BT.709,
-AAC 320 kbps stereo, −16.2 LUFS integrated, −1.5 dBTP true peak.
+AAC 320 kbps stereo, −16.1 LUFS integrated, −2.5 dBTP true peak.
 
 ![Final frame](docs/final-frame.jpg)
 
@@ -103,28 +103,39 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 ## Audio
 
 - **Voice-over**: generated locally with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0
-  model weights), voice `af_heart` (clear international/American English). No paid API or key.
-  "Asematic" is forced to `ˌæsɛmˈætɪk` ("ASS-eh-MAT-ik") via a phoneme override in
-  `scripts/make_narration.py`. Change `BRAND_PHONEMES` there if the brand team prefers another
-  reading. Lines are compressed and levelled to −16 LUFS, then placed one by one on the timeline:
+  model weights), voice **`hm_omega`**: a warm male voice with an Indian English accent. No paid API
+  or key. For clarity:
+  - The brand lines are read a little slower (speed 0.95).
+  - A presence EQ cuts low rumble and lifts the consonant band.
+  - The music ducks ~14 dB under every line.
+  - Each line is compressed and levelled to −16 LUFS.
+
+  "Asematic" is pronounced **"ASS-eh-MAT-ik"** (`ˌæsɛmˈætɪk`) through a phoneme override in
+  `scripts/make_narration.py`. Kokoro's default reading is "asi-MAD-ik", and "AY-seh-MAT-ik"
+  blurred into "Is somatic" with this voice. Change `BRAND_PHONEMES` if the brand team prefers
+  another reading.
+
+  To try a different voice, listen to the samples in `docs/voice-samples/`, then run
+  `NARRATION_VOICE=<name> KOKORO_DIR=. npm run narration && npm run render`. If line lengths
+  change a lot, re-check the start frames in `src/utils/timing.ts`.
 
   | Line | Starts |
   | --- | --- |
-  | "Welcome to Asematic Labs." | 0.47 s |
-  | "Learn industry-ready skills," | 2.87 s |
-  | "build real-world projects," | 5.53 s |
-  | "and turn your potential into opportunity." | 8.33 s |
-  | "Your future starts here." | 11.33 s |
-  | "Asematic Labs, now launching." | 12.87 s (ends 14.6 s) |
+  | "Welcome to Asematic Labs." | 0.33 s |
+  | "Learn industry-ready skills," | 2.80 s |
+  | "build real-world projects," | 5.33 s |
+  | "and turn your potential into opportunity." | 7.73 s |
+  | "Your future starts here." | 10.53 s |
+  | "Asematic Labs, now launching." | 12.40 s (ends ~14.7 s) |
 
 - **Score**: original, synthesized in `scripts/make_audio.py`. D major at 120 BPM: a pad swell, a pluck
   arpeggio and a soft pulse from 2.5 s, a build with riser, a peak on Dmaj9 at 11.5 s with a four-note
   bell motif as the sonic logo, then a natural decay to silence by 15 s.
 - **Sound effects**: also synthesized: rise, particle shimmer, logo hit, light sweep, whooshes, UI
   clicks, keyboard, confirmation tone, card placements, short riser, digital ambience.
-- **Mix** (`src/AsematicLabsLaunch.tsx`): music ducks ~12 dB under every spoken line with 6-frame ramps;
-  final master measures −16.2 LUFS, −1.5 dBTP. An offline Whisper (small.en) transcription of the
-  final mix returns the full script word for word. It spells the brand "Asimatic", as expected for
+- **Mix** (`src/AsematicLabsLaunch.tsx`): music ducks ~14 dB under every spoken line with 6-frame ramps;
+  final master measures −16.1 LUFS, −2.5 dBTP. An offline Whisper (small.en) transcription of the
+  final mix returns the full script word for word. It spells the brand "Asymatic", as expected for
   a non-dictionary word.
 
 ## Replacing the temporary logo

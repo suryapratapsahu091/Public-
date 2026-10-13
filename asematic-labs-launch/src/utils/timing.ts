@@ -39,10 +39,10 @@ const line = (id: LineId, from: number) => ({
 });
 
 export const NARRATION = [
-  line("01-welcome", 14), //  0.47 s  "Welcome to Asematic Labs."
-  line("02-learn", 86), //    2.87 s  "Learn industry-ready skills,"
-  line("03-build", 166), //   5.53 s  "build real-world projects,"
-  line("04-turn", 250), //    8.33 s  "and turn your potential into opportunity."
-  line("05-future", 340), // 11.33 s  "Your future starts here."
-  line("06-launch", 386), // 12.87 s  "Asematic Labs, now launching."
+  line("01-welcome", 10), //  0.33 s  "Welcome to Asematic Labs."
+  line("02-learn", 84), //    2.80 s  "Learn industry-ready skills,"
+  line("03-build", 160), //   5.33 s  "build real-world projects,"
+  line("04-turn", 232), //    7.73 s  "and turn your potential into opportunity."
+  line("05-future", 316), // 10.53 s  "Your future starts here."
+  line("06-launch", 372), // 12.40 s  "Asematic Labs, now launching."  (ends ~14.67 s)
 ];

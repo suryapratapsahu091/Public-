@@ -24,22 +24,25 @@ from kokoro_onnx import Kokoro
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "audio" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
-VOICE = os.environ.get("NARRATION_VOICE", "af_heart")
+VOICE = os.environ.get("NARRATION_VOICE", "hm_omega")  # warm male voice with an Indian English accent
 SR_OUT = 48000
 TARGET_LUFS = -16.0  # each line is levelled to this, so the mix gains in the composition are predictable
 
-# "Asematic" -> "ASS-eh-MAT-ik" with a crisp t. Kokoro's default G2P flaps the t ("asi-MAD-ik");
-# the brand name is pronounced from this phoneme string instead. Change it here if the brand
-# team prefers a different reading.
+# "Asematic" -> "ASS-eh-MAT-ik", with a full "e", a crisp t and the stress on MAT. Kokoro's default
+# G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string instead. Tested
+# against "AY-seh-MAT-ik", which this voice blurs into "Is somatic" at the start of a sentence.
+# Change it here if the brand team prefers a different reading.
 BRAND_PHONEMES = "ˌæsɛmˈætɪk"
+# Brand lines are read slowest so "Asematic Labs" is unmistakable; the rest keeps a natural pace.
+BRAND_SPEED = 0.95
 
 LINES = [
-    ("01-welcome", "Welcome to Asematic Labs.", 1.0),
-    ("02-learn", "Learn industry-ready skills,", 1.0),
-    ("03-build", "build real-world projects,", 1.0),
-    ("04-turn", "and turn your potential into opportunity.", 1.0),
+    ("01-welcome", "Welcome to Asematic Labs.", BRAND_SPEED),
+    ("02-learn", "Learn industry-ready skills,", 1.05),
+    ("03-build", "build real-world projects,", 1.05),
+    ("04-turn", "and turn your potential into opportunity.", 1.05),
     ("05-future", "Your future starts here.", 1.0),
-    ("06-launch", "Asematic Labs, now launching.", 1.05),
+    ("06-launch", "Asematic Labs, now launching.", BRAND_SPEED),
 ]
 
 
@@ -55,6 +58,15 @@ def trim(x: np.ndarray, thresh: float = 0.004, pad: int = 480) -> np.ndarray:
     if len(idx) == 0:
         return x
     return x[max(0, idx[0] - pad) : min(len(x), idx[-1] + pad * 4)]
+
+
+def presence(x: np.ndarray) -> np.ndarray:
+    """Clarity EQ: remove low rumble and lift the 2-6 kHz consonant band by about 4 dB."""
+    from scipy.signal import butter, sosfilt
+
+    x = sosfilt(butter(2, 90, "high", fs=SR_OUT, output="sos"), x)
+    band = sosfilt(butter(2, [2000, 6000], "band", fs=SR_OUT, output="sos"), x)
+    return x + band * 0.6
 
 
 def compress(x: np.ndarray, threshold_db: float = -24.0, ratio: float = 3.0, attack: float = 0.004, release: float = 0.09) -> np.ndarray:
@@ -97,7 +109,7 @@ def main() -> None:
         fade = int(0.01 * SR_OUT)
         audio[:fade] *= np.linspace(0, 1, fade)
         audio[-fade * 4 :] *= np.linspace(1, 0, fade * 4)
-        audio = compress(audio / max(1e-9, np.max(np.abs(audio))))
+        audio = compress(presence(audio / max(1e-9, np.max(np.abs(audio)))))
         meter = pyln.Meter(SR_OUT, block_size=0.2)
         audio = audio * 10 ** ((TARGET_LUFS - meter.integrated_loudness(audio)) / 20)
         audio = limit(audio)

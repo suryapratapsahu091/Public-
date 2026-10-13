@@ -15,7 +15,7 @@ import "./styles/brand";
 import { NARRATION, SCENES, TRANSITION } from "./utils/timing";
 
 // Mix. Stems are loudness-normalised by the scripts (voice and music -16 LUFS, effects -18 LUFS),
-// so these gains map to: voice about -16 LUFS (mono lines play on both channels, hence 0.7), music -20 LUFS in the clear and about 12 dB under the
+// so these gains map to: voice about -16 LUFS (mono lines play on both channels, hence 0.7), music -20 LUFS in the clear and about 14 dB under the
 // voice while it speaks, ambience around -38 LUFS, effects 6-12 dB below the voice.
 
 /** Music level: ducked under every narration line with short ramps. */
@@ -29,7 +29,7 @@ const musicVolume = (frame: number) => {
     });
     duck = Math.max(duck, d);
   }
-  return interpolate(duck, [0, 1], [0.63, 0.25]);
+  return interpolate(duck, [0, 1], [0.63, 0.2]);
 };
 
 export const AsematicLabsLaunch: React.FC = () => {
@@ -94,7 +94,7 @@ export const AsematicLabsLaunch: React.FC = () => {
       {/* Scene 1 */}
       <Audio name="Rise" from={0} src={staticFile("audio/sfx/rise.wav")} volume={0.45} premountFor={fps} />
       <Audio name="Particles" from={8} src={staticFile("audio/sfx/particles.wav")} volume={0.4} premountFor={fps} />
-      <Audio name="Logo hit" from={27} src={staticFile("audio/sfx/logo-hit.wav")} volume={0.5} premountFor={fps} />
+      <Audio name="Logo hit" from={27} src={staticFile("audio/sfx/logo-hit.wav")} volume={0.3} premountFor={fps} />
       <Audio name="Sweep" from={55} src={staticFile("audio/sfx/sweep.wav")} volume={0.5} premountFor={fps} />
       {/* Scene 2 */}
       <Audio name="Click 1" from={76} src={staticFile("audio/sfx/click.wav")} volume={0.36} premountFor={fps} />
@@ -114,7 +114,7 @@ export const AsematicLabsLaunch: React.FC = () => {
       <Audio name="Convergence sweep" from={318} src={staticFile("audio/sfx/sweep.wav")} volume={0.45} premountFor={fps} />
       {/* Scene 5 */}
       <Audio name="Reveal shimmer" from={341} src={staticFile("audio/sfx/particles.wav")} volume={0.4} premountFor={fps} />
-      <Audio name="Reveal hit" from={344} src={staticFile("audio/sfx/logo-hit.wav")} volume={0.6} premountFor={fps} />
+      <Audio name="Reveal hit" from={344} src={staticFile("audio/sfx/logo-hit.wav")} volume={0.45} premountFor={fps} />
     </AbsoluteFill>
   );
 };
