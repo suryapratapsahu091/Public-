@@ -15,6 +15,7 @@ Voice options (environment variables):
     NARRATION_PITCH   pitch shift in semitones, formant-preserving (needs ffmpeg with rubberband)
     BRAND_PHONEMES    override the pronunciation of "Asematic"
     TO_PHONEMES       how "to" is said before the brand: "tuː" (full, default) or "tʊ" (reduced)
+    BRAND_SPEED       speed of the two brand lines (default 0.95; lower = slower, clearer)
 
 Each line is written as its own WAV so the composition can place it exactly on the scene
 timeline (see src/utils/timing.ts). Durations are written to src/generated/narration.json.
@@ -47,7 +48,7 @@ BRAND_PHONEMES = os.environ.get("BRAND_PHONEMES", "ɐsˈɛmætɪk")
 # A full "too" before the brand keeps "to Asematic" from blurring into "to a-sematic".
 TO_PHONEMES = os.environ.get("TO_PHONEMES", "tuː")
 # Brand lines are read slowest so "Asematic Labs" is unmistakable; the rest keeps a natural pace.
-BRAND_SPEED = 0.95
+BRAND_SPEED = float(os.environ.get("BRAND_SPEED", "0.95"))
 
 # Exclamation marks lift the intonation for an upbeat, active read (on-screen text is unaffected).
 LINES = [
