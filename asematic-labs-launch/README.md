@@ -22,6 +22,36 @@ AAC 320 kbps stereo, −16.3 LUFS integrated, −2.7 dBTP true peak.
 Scenes overlap by 12-frame transitions whose midpoints sit exactly on the brief's boundaries
 (`src/utils/timing.ts` throws if the arithmetic stops adding up to 450).
 
+## Vertical announcement reel (Hinglish)
+
+**Render:** [`asematic-labs-reel.mp4`](asematic-labs-reel.mp4) — composition `AsematicLabsReel`,
+1080 × 1920 (9:16), 30 fps, 1000 frames (33.3 s), −16.2 LUFS. Post caption: `docs/reel-caption.txt`.
+
+| Time | Scene (`src/reel/scenes/`) | Voice-over |
+| --- | --- | --- |
+| 0–3.5 s | `ReelHook`: megaphone, "New announcement", words pop as spoken | "Students ke liye ek exciting announcement hai!" |
+| 3.5–10.5 s | `ReelIntro`: logo draws, **Introducing ASEMATIC LABS**; "Concepts" is struck out and "Real-world projects" lights up | "Introducing Asematic Labs — ek aisi learning initiative jahan aap sirf concepts nahi," |
+| 10.5–14.5 s | `ReelProjects`: dashboard, code and phone assemble; skill chips pop | "real-world projects ke through skills build kar sakte ho." |
+| 14.5–19.2 s | `ReelTracks`: three track cards as each is named; **Web Development · Data Science · AI/ML** | "Explore karo Web Development, Data Science aur AI/ML." |
+| 19.2–25.1 s | `ReelIdeas`: Learn ✓ Build ✓, idea bulb, wireframe becomes a real app, "Start building" tapped | "Learn karo, build karo, aur apne ideas ko reality mein convert karna start karo." |
+| 25.1–33.3 s | `ReelEnd`: logo, **Learn. Build. Launch.**, **Follow @asematic.tech** card tapped to "Following" | "Asematic Labs — Learn. Build. Launch. Follow us for learning resources, projects aur upcoming programs!" |
+
+- **Length:** the brief planned 25 s, but the script is about 30 s of speech at a clear, natural
+  pace. Reading it faster made English words blur (for example "Data Science" was heard as
+  "theatre science"), so the reel is 33.3 s, keeping the brief's hook → voice-over → ending order.
+- **Voice:** `hf_alpha` (Kokoro, female, Indian accent). Hinglish is generated from segments:
+  Hindi words in Devanagari and phonemised as Hindi, English words phonemised as English
+  (`scripts/make_reel_narration.py`). Whisper and a strict CTC recogniser both hear every English
+  word, and Whisper translates the Hindi parts correctly.
+- **Music:** original 33 s score, `scripts/make_reel_audio.py` (sonic-logo peak on the tagline).
+  Effects are shared with the launch film.
+
+```bash
+npm run render:reel                              # → asematic-labs-reel.mp4
+KOKORO_DIR=. npm run reel:narration              # regenerate the Hinglish voice-over
+npm run reel:audio                               # regenerate the reel music
+```
+
 ## Project structure
 
 ```

@@ -5,12 +5,15 @@ import { Scene02Learning } from "./scenes/Scene02Learning";
 import { Scene03Projects } from "./scenes/Scene03Projects";
 import { Scene04Opportunities } from "./scenes/Scene04Opportunities";
 import { Scene05FinalReveal } from "./scenes/Scene05FinalReveal";
+import { ReelLaunch } from "./reel/ReelLaunch";
 import "./styles/brand";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition id="AsematicLabsLaunch" component={AsematicLabsLaunch} durationInFrames={450} fps={30} width={1920} height={1080} />
+      {/* Vertical Hinglish announcement reel (Instagram Reels / YouTube Shorts). */}
+      <Composition id="AsematicLabsReel" component={ReelLaunch} durationInFrames={1000} fps={30} width={1080} height={1920} />
       {/* Individual scenes, for previewing and editing in isolation (no background or audio). */}
       <Folder name="Scenes">
         <Composition

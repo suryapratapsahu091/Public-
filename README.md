@@ -10,7 +10,7 @@ This project is just getting started. Its description, features and usage instru
 
 | Folder | What it is |
 | --- | --- |
-| [`asematic-labs-launch/`](asematic-labs-launch/) | Asematic Labs 15 s 16:9 launch film (Remotion). Final render: [`asematic-labs-launch.mp4`](asematic-labs-launch/asematic-labs-launch.mp4) |
+| [`asematic-labs-launch/`](asematic-labs-launch/) | Asematic Labs 15 s 16:9 launch film ([mp4](asematic-labs-launch/asematic-labs-launch.mp4)) and 33 s vertical Hinglish reel ([mp4](asematic-labs-launch/asematic-labs-reel.mp4)), Remotion |
 | [`product-video/`](product-video/) | Asematic 25 s vertical product launch video (Remotion) |
 | [`launch-video/`](launch-video/) | Asematic Technologies 10 s brand launch video |
 

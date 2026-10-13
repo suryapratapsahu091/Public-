@@ -32,6 +32,9 @@
     "narration": "python3 scripts/make_narration.py",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
-    "render:audio": "remotion render AsematicLabsLaunch out/audio-preview.m4a --codec=aac"
+    "render:audio": "remotion render AsematicLabsLaunch out/audio-preview.m4a --codec=aac",
+    "render:reel": "remotion render AsematicLabsReel asematic-labs-reel.mp4 --crf=16",
+    "reel:narration": "python3 scripts/make_reel_narration.py",
+    "reel:audio": "python3 scripts/make_reel_audio.py"
   }
 }

@@ -13,7 +13,7 @@ type IllProps = { readonly t: number; readonly frame: number };
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Browser in front of a three-tier server stack, joined by an API line. */
-const FullStackArt: React.FC<IllProps> = ({ t, frame }) => {
+export const FullStackArt: React.FC<IllProps> = ({ t, frame }) => {
   const flow = (frame * 1.2) % 40;
   return (
     <svg width={IW} height={IH} viewBox={`0 0 ${IW} ${IH}`}>
@@ -42,7 +42,7 @@ const FullStackArt: React.FC<IllProps> = ({ t, frame }) => {
 };
 
 /** Scatter plot with a fitted trend line drawing across it. */
-const DataArt: React.FC<IllProps> = ({ t }) => {
+export const DataArt: React.FC<IllProps> = ({ t }) => {
   const pts = [
     [40, 140], [62, 128], [78, 132], [96, 112], [118, 116], [134, 96], [152, 100], [170, 82],
     [188, 86], [206, 66], [226, 70], [244, 52], [262, 58], [284, 40], [300, 44],
@@ -62,7 +62,7 @@ const DataArt: React.FC<IllProps> = ({ t }) => {
 };
 
 /** A small neural network whose connections light up layer by layer. */
-const AiArt: React.FC<IllProps> = ({ t, frame }) => {
+export const AiArt: React.FC<IllProps> = ({ t, frame }) => {
   const layers = [
     [40, [44, 88, 132]],
     [130, [26, 66, 110, 150]],
