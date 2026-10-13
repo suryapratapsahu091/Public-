@@ -20,9 +20,9 @@ type Props = {
 
 const F = REEL_SCENES.end.from;
 // Seconds into "Asematic Labs — Learn. Build. Launch." for each tagline word.
-const TAG_AT = [1.27, 1.8, 2.25];
+const TAG_AT = [1.25, 1.76, 2.15];
 // Seconds into "Follow us for learning resources, projects aur upcoming programs!" for each offer.
-const OFFER_AT = [0.65, 2.07, 2.92];
+const OFFER_AT = [0.65, 2.14, 2.96];
 
 /** 25.1-33.3 s: logo, "Learn. Build. Launch.", and the follow call to action. All text is in by ~32 s. */
 export const ReelEnd: React.FC<Props> = ({

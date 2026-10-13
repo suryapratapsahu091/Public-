@@ -105,8 +105,8 @@ export const ReelIntro: React.FC<Props> = ({ label }) => {
   const pill = glide(frame, fps, cue(2, 1.1, F));
   const concepts = glide(frame, fps, cue(2, 2.0, F));
   const projects = glide(frame, fps, cue(2, 2.5, F));
-  const nahi = progress(frame, cue(2, 3.6, F), cue(2, 4.1, F), EASE.inOut);
-  const glow = progress(frame, cue(2, 3.9, F), cue(2, 4.4, F));
+  const nahi = progress(frame, cue(2, 3.5, F), cue(2, 4.0, F), EASE.inOut);
+  const glow = progress(frame, cue(2, 3.8, F), cue(2, 4.3, F));
 
   return (
     <AbsoluteFill style={{ alignItems: "center" }}>

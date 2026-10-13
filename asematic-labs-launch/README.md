@@ -25,7 +25,7 @@ Scenes overlap by 12-frame transitions whose midpoints sit exactly on the brief'
 ## Vertical announcement reel (Hinglish)
 
 **Render:** [`asematic-labs-reel.mp4`](asematic-labs-reel.mp4) — composition `AsematicLabsReel`,
-1080 × 1920 (9:16), 30 fps, 1000 frames (33.3 s), −16.2 LUFS. Post caption: `docs/reel-caption.txt`.
+1080 × 1920 (9:16), 30 fps, 1000 frames (33.3 s), −16.5 LUFS. Post caption: `docs/reel-caption.txt`.
 
 | Time | Scene (`src/reel/scenes/`) | Voice-over |
 | --- | --- | --- |
@@ -39,7 +39,9 @@ Scenes overlap by 12-frame transitions whose midpoints sit exactly on the brief'
 - **Length:** the brief planned 25 s, but the script is about 30 s of speech at a clear, natural
   pace. Reading it faster made English words blur (for example "Data Science" was heard as
   "theatre science"), so the reel is 33.3 s, keeping the brief's hook → voice-over → ending order.
-- **Voice:** `hf_alpha` (Kokoro, female, Indian accent). Hinglish is generated from segments:
+- **Voice:** a professional male narrator: Kokoro `hm_omega` (Indian accent) blended 30% with
+  `am_michael` (deep, polished narrator tone), pitched 0.5 semitone lower. Listen alone:
+  `docs/reel-voice-only.m4a`. Hinglish is generated from segments:
   Hindi words in Devanagari and phonemised as Hindi, English words phonemised as English
   (`scripts/make_reel_narration.py`). Whisper and a strict CTC recogniser both hear every English
   word, and Whisper translates the Hindi parts correctly.

@@ -21,11 +21,11 @@ const F = REEL_SCENES.ideas.from;
 // Seconds into "Learn karo, build karo, aur apne ideas ko reality mein convert karna start karo."
 const T = {
   learn: 0,
-  build: 0.84,
-  ideas: 2.18,
-  reality: 3.17,
-  convert: 3.99,
-  start: 4.95,
+  build: 0.9,
+  ideas: 2.3,
+  reality: 3.07,
+  convert: 4.07,
+  start: 4.99,
 };
 const at = (s: number) => cue(5, s, F);
 

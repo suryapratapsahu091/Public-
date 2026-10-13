@@ -64,16 +64,16 @@ export const ReelLaunch: React.FC = () => {
               lines={[
                 [
                   { text: "Students", at: 0 },
-                  { text: "ke", at: 0.62 },
+                  { text: "ke", at: 0.6 },
                   { text: "liye", at: 0.8 },
                 ],
                 [
                   { text: "ek", at: 1.0 },
-                  { text: "exciting", at: 1.22, accent: true },
+                  { text: "exciting", at: 1.3, accent: true },
                 ],
                 [
-                  { text: "announcement", at: 1.56, accent: true },
-                  { text: "hai!", at: 2.46 },
+                  { text: "announcement", at: 1.64, accent: true },
+                  { text: "hai!", at: 2.55 },
                 ],
               ]}
             />

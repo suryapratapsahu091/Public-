@@ -21,7 +21,7 @@ const META = [
   "Machine Learning · Neural Nets",
 ];
 // Seconds into "Explore karo Web Development, Data Science aur AI/ML." where each track is named.
-const AT = [1.17, 1.96, 3.15];
+const AT = [1.0, 1.94, 3.12];
 
 /** 14.5-19.2 s: the three learning tracks arrive as they are named. */
 export const ReelTracks: React.FC<Props> = ({ tracks, line }) => {

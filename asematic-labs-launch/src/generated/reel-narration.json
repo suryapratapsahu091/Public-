@@ -1,45 +1,46 @@
 {
-  "voice": "hf_alpha",
+  "voice": "hm_omega:0.7+am_michael:0.3",
   "pace": 1.0,
+  "pitch": -0.5,
   "lines": {
     "01-hook": {
       "text": "Students ke liye ek exciting announcement hai!",
-      "seconds": 2.927,
+      "seconds": 2.939,
       "phonemes": "stˈuːdənts keː lˈɪeː ˈeːk ɛksˈaɪɾɪŋ ɐnˈaʊnsmənt hɛː!"
     },
     "02-intro": {
       "text": "Introducing Asematic Labs —",
-      "seconds": 2.359,
+      "seconds": 2.239,
       "phonemes": "ˌɪntɹədˈuːsɪŋ ɐsˈɛmətɪk lˈæbz,"
     },
     "03-initiative": {
       "text": "ek aisi learning initiative jahan aap sirf concepts nahi,",
-      "seconds": 4.257,
+      "seconds": 4.083,
       "phonemes": "ˈeːk ˈɛːsi lˈɜːnɪŋ ɪnˈɪʃiətˌɪv, ɟˈʌhã ˌaːp sˈɪɾpʰ kˈɑːnsɛpts nˈʌhĩ,"
     },
     "04-projects": {
       "text": "real-world projects ke through skills build kar sakte ho.",
-      "seconds": 3.6,
+      "seconds": 3.502,
       "phonemes": "ɹˈiːəlwˈɜːld pɹˈɑːdʒɛkts keː θɹuː skˈɪlz bˈɪld kˈʌɾ sˈʌktˌeː hoː"
     },
     "05-explore": {
       "text": "Explore karo Web Development, Data Science aur AI/ML.",
-      "seconds": 4.386,
+      "seconds": 4.466,
       "phonemes": "ɛksplˈɔːɹ kˈʌɾoː wˈɛb dɪvˈɛləpmənt, dˈeɪɾə sˈaɪəns ɔːɾ ˈeɪ.ˈaɪ. ˈɛm.ˈɛl."
     },
     "06-learn": {
       "text": "Learn karo, build karo, aur apne ideas ko reality mein convert karna start karo.",
-      "seconds": 5.555,
+      "seconds": 5.575,
       "phonemes": "lˈɜːn kˈʌɾoː, bˈɪld kˈʌɾoː, ɔːɾ ˈʌpnˌeː aɪdˈiəz koː ɹɪˈælᵻɾi mˈẽː kənvˈɜːt kˈʌɾnˌaː stˈɑːɹt kˈʌɾoː"
     },
     "07-tagline": {
       "text": "Asematic Labs — Learn. Build. Launch.",
-      "seconds": 2.754,
+      "seconds": 2.677,
       "phonemes": "ɐsˈɛmətɪk lˈæbz. lˈɜːn. bˈɪld. lˈɑːntʃ!"
     },
     "08-follow": {
       "text": "Follow us for learning resources, projects aur upcoming programs!",
-      "seconds": 4.092,
+      "seconds": 4.102,
       "phonemes": "fˈɑːloʊ ˌʌs fɔːɹ lˈɜːnɪŋ ɹᵻsˈɔːɹsᵻz, pɹˈɑːdʒɛkts ɔːɾ ʌpkˈʌmɪŋ pɹˈoʊɡɹæmz!"
     }
   }

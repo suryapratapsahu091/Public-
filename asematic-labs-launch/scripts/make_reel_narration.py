@@ -9,8 +9,9 @@ Run from the project root (needs the Kokoro files, see scripts/make_narration.py
     KOKORO_DIR=/path/to/kokoro/files python3 scripts/make_reel_narration.py
 
 Options (environment variables):
-    REEL_VOICE   Kokoro voice (default hf_alpha: female, Indian accent)
+    REEL_VOICE   Kokoro voice or blend, e.g. "hm_omega:0.7+am_michael:0.3"
     REEL_PACE    multiplies every line's speed (default 1.0)
+    REEL_PITCH   pitch shift in semitones, formant-preserving (default -0.5)
 """
 import json
 import os
@@ -22,13 +23,14 @@ import pyloudnorm as pyln
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from make_narration import SR_OUT, TARGET_LUFS, compress, limit, presence, resample, trim  # noqa: E402
+from make_narration import SR_OUT, TARGET_LUFS, compress, limit, load_voice, pitch_shift, presence, resample, trim  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "audio" / "reel" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
-VOICE = os.environ.get("REEL_VOICE", "hf_alpha")
+VOICE = os.environ.get("REEL_VOICE", "hm_omega:0.7+am_michael:0.3")  # male narrator: Indian accent + deep, polished tone
 PACE = float(os.environ.get("REEL_PACE", "1.0"))
+PITCH = float(os.environ.get("REEL_PITCH", "-0.5"))  # slightly deeper
 
 # "Asematic" -> "a-SEM-uh-tik", as approved for the launch film.
 BRAND = "ɐsˈɛmətɪk"
@@ -62,6 +64,7 @@ def main() -> None:
     kokoro = Kokoro(str(MODEL_DIR / "kokoro-v1.0.onnx"), str(MODEL_DIR / "voices-v1.0.bin"))
     OUT.mkdir(parents=True, exist_ok=True)
     timing = {}
+    voice = load_voice(kokoro, VOICE)
     for name, text, speed, segments in LINES:
         parts = []
         for lang, chunk in segments:
@@ -70,8 +73,8 @@ def main() -> None:
             else:
                 parts.append(kokoro.tokenizer.phonemize(chunk, "hi" if lang == "hi" else "en-us"))
         phonemes = " ".join(parts)
-        samples, sr = kokoro.create(phonemes, voice=VOICE, speed=speed * PACE, lang="en-us", is_phonemes=True)
-        audio = trim(resample(samples.astype(np.float64), sr, SR_OUT))
+        samples, sr = kokoro.create(phonemes, voice=voice, speed=speed * PACE, lang="en-us", is_phonemes=True)
+        audio = trim(pitch_shift(resample(samples.astype(np.float64), sr, SR_OUT), PITCH))
         fade = int(0.01 * SR_OUT)
         audio[:fade] *= np.linspace(0, 1, fade)
         audio[-fade * 4 :] *= np.linspace(1, 0, fade * 4)
@@ -84,7 +87,7 @@ def main() -> None:
 
     gen = ROOT / "src" / "generated"
     gen.mkdir(exist_ok=True)
-    meta = {"voice": VOICE, "pace": PACE, "lines": timing}
+    meta = {"voice": VOICE, "pace": PACE, "pitch": PITCH, "lines": timing}
     (gen / "reel-narration.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 
 
