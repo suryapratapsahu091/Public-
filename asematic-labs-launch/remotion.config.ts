@@ -12,10 +12,9 @@ Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
 Config.setDefaultPremountInSeconds(2);
 
-// Delivery settings for the master MP4: H.264, high quality, BT.709 (standard yuv420p, TV range),
+// Delivery settings for the master MP4 (CRF 16 is passed by `npm run render`): H.264, BT.709 (standard yuv420p, TV range),
 // AAC 320 kbps audio.
 Config.setCodec("h264");
-Config.setCrf(16);
 Config.setColorSpace("bt709");
 Config.setAudioCodec("aac");
 Config.setAudioBitrate("320k");

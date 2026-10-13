@@ -26,11 +26,12 @@
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
-    "render": "remotion render AsematicLabsLaunch asematic-labs-launch.mp4",
+    "render": "remotion render AsematicLabsLaunch asematic-labs-launch.mp4 --crf=16",
     "render:preview": "remotion render AsematicLabsLaunch out/preview.mp4 --scale=0.5",
     "audio": "python3 scripts/make_audio.py",
     "narration": "python3 scripts/make_narration.py",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "render:audio": "remotion render AsematicLabsLaunch out/audio-preview.m4a --codec=aac"
   }
 }

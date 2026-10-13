@@ -24,15 +24,15 @@ from kokoro_onnx import Kokoro
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "audio" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
-VOICE = os.environ.get("NARRATION_VOICE", "hm_omega")  # warm male voice with an Indian English accent
+VOICE = os.environ.get("NARRATION_VOICE", "hf_alpha")  # female voice with an Indian English accent
 SR_OUT = 48000
 TARGET_LUFS = -16.0  # each line is levelled to this, so the mix gains in the composition are predictable
 
-# "Asematic" -> "ASS-eh-MAT-ik", with a full "e", a crisp t and the stress on MAT. Kokoro's default
-# G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string instead. Tested
-# against "AY-seh-MAT-ik", which this voice blurs into "Is somatic" at the start of a sentence.
-# Change it here if the brand team prefers a different reading.
-BRAND_PHONEMES = "ˌæsɛmˈætɪk"
+# "Asematic" -> "a-SEM-a-tik": stress on SEM with a full "e", so it is not heard as "Asymatic".
+# Kokoro's default G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string
+# instead. Of ~15 readings tested with an offline speech recogniser, this is the one transcribed
+# as exactly "Asematic Labs". Change it here if the brand team prefers a different reading.
+BRAND_PHONEMES = "ɐsˈɛmætɪk"
 # Brand lines are read slowest so "Asematic Labs" is unmistakable; the rest keeps a natural pace.
 BRAND_SPEED = 0.95
 

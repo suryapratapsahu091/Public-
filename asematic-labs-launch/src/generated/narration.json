@@ -1,35 +1,35 @@
 {
-  "voice": "hm_omega",
+  "voice": "hf_alpha",
   "lines": {
     "01-welcome": {
       "text": "Welcome to Asematic Labs.",
-      "seconds": 2.146,
-      "phonemes": "wˈɛlkʌm tʊ ˌæsɛmˈætɪk lˈæbz."
+      "seconds": 2.201,
+      "phonemes": "wˈɛlkʌm tʊ ɐsˈɛmætɪk lˈæbz."
     },
     "02-learn": {
       "text": "Learn industry-ready skills,",
-      "seconds": 1.883,
+      "seconds": 1.864,
       "phonemes": "lˈɜːn ˈɪndʌstɹiɹˈɛdi skˈɪlz,"
     },
     "03-build": {
       "text": "build real-world projects,",
-      "seconds": 1.884,
+      "seconds": 1.894,
       "phonemes": "bˈɪld ɹˈiːəlwˈɜːld pɹˈɑːdʒɛkts,"
     },
     "04-turn": {
       "text": "and turn your potential into opportunity.",
-      "seconds": 2.475,
+      "seconds": 2.479,
       "phonemes": "ænd tˈɜːn jʊɹ pətˈɛnʃəl ˌɪntʊ ɑːpɚtˈuːnᵻɾi."
     },
     "05-future": {
       "text": "Your future starts here.",
-      "seconds": 1.577,
+      "seconds": 1.531,
       "phonemes": "jʊɹ fjˈuːtʃɚ stˈɑːɹts hˈɪɹ."
     },
     "06-launch": {
       "text": "Asematic Labs, now launching.",
-      "seconds": 2.273,
-      "phonemes": "ˌæsɛmˈætɪk lˈæbz, nˈaʊ lˈɑːntʃɪŋ."
+      "seconds": 2.174,
+      "phonemes": "ɐsˈɛmætɪk lˈæbz, nˈaʊ lˈɑːntʃɪŋ."
     }
   }
 }
