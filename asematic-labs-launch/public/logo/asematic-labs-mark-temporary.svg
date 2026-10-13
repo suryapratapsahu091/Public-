@@ -1,0 +1,14 @@
+<!-- TEMPORARY mark for Asematic Labs: a vector re-drawing of the parent Asematic Technologies "A"
+     mark, traced from launch-video/assets/lockup-original.png. Not an official Asematic Labs logo.
+     Replace when the official Labs logo is available (see README). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 420 384" width="420" height="384">
+  <defs>
+    <linearGradient id="markBlue" x1="0" y1="1" x2="0.6" y2="0">
+      <stop offset="0" stop-color="#1D4ED8"/>
+      <stop offset="0.55" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <path d="M206 11 L247 80 L95 353 L12 353 Z" fill="url(#markBlue)" stroke="url(#markBlue)" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M193 262 L256 149 L282 153 L390 353 L308 353 L262 270 Z" fill="#0F172A" stroke="#0F172A" stroke-width="14" stroke-linejoin="round"/>
+</svg>

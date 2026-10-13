@@ -6,6 +6,14 @@ A public repository by [@suryapratapsahu091](https://github.com/suryapratapsahu0
 
 This project is just getting started. Its description, features and usage instructions will go here.
 
+## Projects
+
+| Folder | What it is |
+| --- | --- |
+| [`asematic-labs-launch/`](asematic-labs-launch/) | Asematic Labs 15 s 16:9 launch film (Remotion). Final render: [`asematic-labs-launch.mp4`](asematic-labs-launch/asematic-labs-launch.mp4) |
+| [`product-video/`](product-video/) | Asematic 25 s vertical product launch video (Remotion) |
+| [`launch-video/`](launch-video/) | Asematic Technologies 10 s brand launch video |
+
 ## Getting Started
 
 Clone the repository:
