@@ -5,7 +5,7 @@ by Asematic Technologies Private Limited. Built entirely in code with Remotion, 
 vector graphics, UI mockups, synthesized score and sound design, and a locally generated voice-over.
 
 **Final render:** [`asematic-labs-launch.mp4`](asematic-labs-launch.mp4): H.264 High, yuv420p BT.709,
-AAC 320 kbps stereo, −16.0 LUFS integrated, −3.5 dBTP true peak.
+AAC 320 kbps stereo, −16.3 LUFS integrated, −3.0 dBTP true peak.
 
 ![Final frame](docs/final-frame.jpg)
 
@@ -72,12 +72,12 @@ Rendering is fully offline: fonts, audio and graphics are all local and nothing 
 ### Regenerating audio (optional; the generated files are committed)
 
 ```bash
-pip install numpy scipy soundfile pyloudnorm kokoro-onnx
+pip install numpy scipy soundfile pyloudnorm sherpa-onnx
 npm run audio                                   # music + effects
-# narration: download the Kokoro model files once (≈350 MB, not committed)
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
-KOKORO_DIR=. npm run narration
+# narration: download the VCTK voice model once (≈150 MB, not committed)
+curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-vctk.tar.bz2
+tar xjf vits-vctk.tar.bz2
+VCTK_DIR=vits-vctk npm run narration
 ```
 
 If narration lengths change, `src/generated/narration.json` updates automatically and the music ducking
@@ -103,37 +103,31 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 
 ## Audio
 
-- **Voice-over**: generated locally with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0
-  model weights), using a female voice with an Indian English accent (`hf_alpha`, alone or blended).
-  No paid API or key. The read is energetic: about 8–12% faster than default, pitch raised 1–2
-  semitones (formant-preserving), and upbeat punctuation. A presence EQ, compression and −16 LUFS
-  levelling keep it clear, and the music ducks ~14 dB under every line.
-
-  "Asematic" is pronounced **"a-SEM-a-tik"** (`ɐsˈɛmætɪk`) via a phoneme override. The two brand
-  lines never go faster than speed 1.0, so the name stays crisp.
-
-  **Five voice demos** (full 15 s soundtrack: voice, music and effects) are in `docs/voice-demos/`.
-  An offline speech recogniser transcribes each one word for word, including "Asematic Labs":
-
-  | Demo | Voice | Pace | Pitch |
-  | --- | --- | --- | --- |
-  | 1 · energetic Indian (**used in the final video**) | `hf_alpha` | 1.08 | +1 |
-  | 2 · bright, youthful | `hf_alpha` | 1.12 | +2 |
-  | 3 · warm, polished | `hf_alpha` 70% + `af_nova` 30% | 1.10 | +1 |
-  | 4 · fresh, lively | `hf_alpha` 70% + `af_jessica` 30% | 1.10 | +1 |
-  | 5 · confident, polished | `hf_alpha` 70% + `bf_emma` 30% | 1.08 | +1 |
-
-  `KOKORO_DIR=... bash scripts/voice_demos.sh` rebuilds them all and leaves demo 1 as the current
-  narration. To use another demo, run its line from that script's `demo` list, then `npm run render`.
+- **Voice-over** (final): a young **Indian woman's voice reading English**: speaker p248 of a VITS
+  model trained on the VCTK English speech corpus, run locally through
+  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (no API key or paid service). It replaced the
+  earlier Kokoro voices, which used a Hindi voice to read English and blurred some words.
+  - Settings that make every word clear:
+    - Speed 0.9, with no sampling noise (also makes the voice repeatable).
+    - "asematic" added to the model's pronunciation dictionary as `ɐ s ˈ ɛ m æ t ɪ k` ("a-SEM-a-tik").
+    - Line 1 is spoken as "…Labs, everyone." and cut before "everyone". The model swallows a
+      sentence-final "Labs", but says it clearly when it's followed by another word.
+    - Light compression only, because heavier settings smeared consonants.
+  - Checked with two offline recognisers: Whisper, and a strict NeMo CTC model that doesn't fill
+    in expected words. Both transcribe every English word of the script correctly, and both hear
+    the brand as "a-sematic Labs".
+  - Listening files: `docs/voice-final/soundtrack-vctk-p248.m4a` (full mix) and
+    `voice-only-vctk-p248.m4a`.
+  - The earlier Kokoro demos remain in `docs/voice-demos/` (`NARRATION_ENGINE=kokoro`).
 
   | Line | Starts |
   | --- | --- |
-  | "Welcome to Asematic Labs!" | 0.33 s |
+  | "Welcome to Asematic Labs." | 0.33 s |
   | "Learn industry-ready skills," | 2.80 s |
   | "build real-world projects," | 5.33 s |
   | "and turn your potential into opportunity!" | 7.73 s |
   | "Your future starts here!" | 10.53 s |
-  | "Asematic Labs, now launching!" | 12.40 s |
+  | "Asematic Labs, now launching." | 12.40 s |
 
 - **Score**: original, synthesized in `scripts/make_audio.py`. D major at 120 BPM: a pad swell, a pluck
   arpeggio and a soft pulse from 2.5 s, a build with riser, a peak on Dmaj9 at 11.5 s with a four-note
@@ -141,7 +135,7 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 - **Sound effects**: also synthesized: rise, particle shimmer, logo hit, light sweep, whooshes, UI
   clicks, keyboard, confirmation tone, card placements, short riser, digital ambience.
 - **Mix** (`src/AsematicLabsLaunch.tsx`): music ducks ~14 dB under every spoken line with 6-frame ramps;
-  final master measures −16.0 LUFS, −3.5 dBTP. An offline Whisper (small.en) transcription of the
+  final master measures −16.3 LUFS, −3.0 dBTP. An offline Whisper (small.en) transcription of the
   final mix returns the full script word for word. The final MP4 uses demo 1, and its soundtrack is
   identical to `docs/voice-demos/demo-1-energetic-indian.m4a`.
 

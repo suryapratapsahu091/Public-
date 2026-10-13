@@ -1,15 +1,29 @@
-"""Generates the voice-over lines in public/audio/narration/ with Kokoro-82M (Apache-2.0),
-an open neural TTS model that runs locally through ONNX Runtime. No API key or paid service.
+"""Generates the voice-over lines in public/audio/narration/ with open neural TTS models that run
+locally (no API key or paid service).
 
-Setup (model files are ~350 MB and are not committed):
-    pip install kokoro-onnx soundfile numpy scipy pyloudnorm
+Default engine "vctk": a VITS model trained on the VCTK English corpus, speaker p248 (a young
+Indian woman reading English), run through sherpa-onnx. It pronounces every English word clearly.
+Alternative engine "kokoro": Kokoro-82M (Apache-2.0), used for the earlier voice demos.
+
+Setup (model files are not committed):
+    pip install sherpa-onnx soundfile numpy scipy pyloudnorm          # vctk engine
+    curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-vctk.tar.bz2
+    tar xjf vits-vctk.tar.bz2
+    pip install kokoro-onnx                                           # kokoro engine (optional)
     curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
     curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 
 Run from the project root:
-    KOKORO_DIR=/path/to/model/files python3 scripts/make_narration.py
+    VCTK_DIR=/path/to/vits-vctk python3 scripts/make_narration.py
+    NARRATION_ENGINE=kokoro KOKORO_DIR=/path/to/kokoro/files python3 scripts/make_narration.py
 
-Voice options (environment variables):
+VCTK options (environment variables):
+    VCTK_SPEAKER      VCTK speaker id (default p248)
+    VCTK_SPEED        speaking speed (default 0.9: slightly slow, for maximum clarity)
+    VCTK_NOISE        sampling noise (default 0 = deterministic and clearest)
+    VCTK_BRAND        lexicon pronunciation of "asematic" (default "ɐ s ˈ ɛ m æ t ɪ k" = a-SEM-a-tik)
+
+Kokoro options (environment variables):
     NARRATION_VOICE   a Kokoro voice, or a blend such as "hf_alpha:0.6+af_heart:0.4"
     NARRATION_PACE    multiplies every line's speed (1.08 = 8% faster, more energetic)
     NARRATION_PITCH   pitch shift in semitones, formant-preserving (needs ffmpeg with rubberband)
@@ -29,9 +43,23 @@ from pathlib import Path
 import numpy as np
 import pyloudnorm as pyln
 import soundfile as sf
-from kokoro_onnx import Kokoro
 
 ROOT = Path(__file__).resolve().parent.parent
+ENGINE = os.environ.get("NARRATION_ENGINE", "vctk")
+VCTK_DIR = Path(os.environ.get("VCTK_DIR", "vits-vctk"))
+VCTK_SPEAKER = os.environ.get("VCTK_SPEAKER", "p248")
+VCTK_SPEED = float(os.environ.get("VCTK_SPEED", "0.9"))
+VCTK_BRAND = os.environ.get("VCTK_BRAND", "ɐ s ˈ ɛ m æ t ɪ k")
+VCTK_NOISE = float(os.environ.get("VCTK_NOISE", "0"))
+# Speaker order of the sherpa-onnx vits-vctk model (sid = index).
+VCTK_SPEAKERS = (
+    "p225 p226 p227 p228 p229 p230 p231 p232 p233 p234 p236 p237 p238 p239 p240 p241 p243 p244 p245 p246 "
+    "p247 p248 p249 p250 p251 p252 p253 p254 p255 p256 p257 p258 p259 p260 p261 p262 p263 p264 p265 p266 "
+    "p267 p268 p269 p270 p271 p272 p273 p274 p275 p276 p277 p278 p279 p280 p281 p282 p283 p284 p285 p286 "
+    "p287 p288 p292 p293 p294 p295 p297 p298 p299 p300 p301 p302 p303 p304 p305 p306 p307 p308 p310 p311 "
+    "p312 p313 p314 p315 p316 p317 p318 p323 p326 p329 p330 p333 p334 p335 p336 p339 p340 p341 p343 p345 "
+    "p347 p351 p360 p361 p362 p363 p364 p374 p376"
+).split()
 OUT = ROOT / "public" / "audio" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
 VOICE = os.environ.get("NARRATION_VOICE", "hf_alpha")  # female voice with an Indian English accent
@@ -61,7 +89,98 @@ LINES = [
 ]
 
 
-def load_voice(kokoro: Kokoro, spec: str):
+# Plain spellings for the VCTK lexicon (it has no hyphenated compounds); calm full stops on the
+# brand lines keep "Labs" crisp.
+VCTK_TEXT = {
+    # The model swallows "Labs" when it ends a sentence, so this line is spoken with a helper word
+    # ("..., everyone.") and the audio is cut at the pause before it. The film says only
+    # "Welcome to Asematic Labs."
+    "01-welcome": "Welcome to Asematic Labs, everyone.",
+    "02-learn": "Learn industry ready skills,",
+    "03-build": "build real world projects,",
+    "04-turn": "and turn your potential into opportunity!",
+    "05-future": "Your future starts here!",
+    "06-launch": "Asematic Labs, now launching.",
+}
+
+
+def cut_before_last_word(x: np.ndarray, sr: int) -> np.ndarray:
+    """Cuts a clip at the last pause that still has a full word (>= 0.3 s of audio) after it."""
+    hop = int(0.01 * sr)
+    energy = np.array([np.sqrt(np.mean(x[i : i + hop] ** 2)) for i in range(0, len(x) - hop, hop)])
+    quiet = energy < 0.03 * energy.max()
+    gaps, i = [], 0
+    while i < len(energy):
+        if quiet[i]:
+            j = i
+            while j < len(energy) and quiet[j]:
+                j += 1
+            if j < len(energy) and (len(energy) - j) * hop / sr >= 0.3 and i * hop / sr > 0.8:
+                gaps.append(i)
+            i = j
+        else:
+            i += 1
+    return x[: gaps[-1] * hop + int(0.03 * sr)]
+
+
+def vctk_engine():
+    """Returns synth(name, text) -> (samples, sample_rate) for the VCTK model."""
+    import sherpa_onnx
+
+    lexicon = Path(tempfile.mkdtemp()) / "lexicon.txt"
+    lexicon.write_text((VCTK_DIR / "lexicon.txt").read_text() + f"asematic {VCTK_BRAND}\n")
+    tts = sherpa_onnx.OfflineTts(
+        sherpa_onnx.OfflineTtsConfig(
+            model=sherpa_onnx.OfflineTtsModelConfig(
+                vits=sherpa_onnx.OfflineTtsVitsModelConfig(
+                    model=str(VCTK_DIR / "vits-vctk.onnx"),
+                    lexicon=str(lexicon),
+                    tokens=str(VCTK_DIR / "tokens.txt"),
+                    # Sampling noise: lower = steadier, clearer articulation; 0 makes it repeatable.
+                    noise_scale=VCTK_NOISE,
+                    noise_scale_w=VCTK_NOISE,
+                ),
+                num_threads=4,
+            )
+        )
+    )
+    sid = VCTK_SPEAKERS.index(VCTK_SPEAKER)
+
+    def synth(name, _text):
+        text = VCTK_TEXT[name]
+        a = tts.generate(text, sid=sid, speed=VCTK_SPEED)
+        x = np.array(a.samples)
+        if text.endswith(", everyone."):
+            x = cut_before_last_word(x, a.sample_rate)
+            text = text.replace(", everyone.", ".")
+        return x, a.sample_rate, text
+
+    return synth
+
+
+def kokoro_engine():
+    """Returns synth(name, text) -> (samples, sample_rate, phonemes) for Kokoro."""
+    from kokoro_onnx import Kokoro
+
+    kokoro = Kokoro(str(MODEL_DIR / "kokoro-v1.0.onnx"), str(MODEL_DIR / "voices-v1.0.bin"))
+    voice = load_voice(kokoro, VOICE)
+    speeds = {name: speed for name, _, speed in LINES}
+
+    def synth(name, text):
+        phonemes = kokoro.tokenizer.phonemize(text, "en-us")
+        for flapped in ("ˌæsɪmˈæɾɪk", "æsɪmˈæɾɪk", "ˌæsɪmˈætɪk"):
+            phonemes = phonemes.replace(flapped, BRAND_PHONEMES)
+        phonemes = phonemes.replace(f"tʊ {BRAND_PHONEMES}", f"{TO_PHONEMES} {BRAND_PHONEMES}")
+        # Brand lines never speed up past 1.0 so "Asematic Labs" stays crisp at any pace.
+        speed = speeds[name]
+        line_speed = min(speed * PACE, 1.0) if BRAND_PHONEMES in phonemes else speed * PACE
+        samples, sr = kokoro.create(phonemes, voice=voice, speed=line_speed, lang="en-us", is_phonemes=True)
+        return pitch_shift(resample(samples.astype(np.float64), sr, SR_OUT), PITCH), SR_OUT, phonemes
+
+    return synth
+
+
+def load_voice(kokoro, spec: str):
     """A single voice name, or a weighted blend: "hf_alpha:0.6+af_heart:0.4"."""
     if "+" not in spec and ":" not in spec:
         return spec
@@ -136,36 +255,33 @@ def limit(x: np.ndarray, ceiling_db: float = -1.5) -> np.ndarray:
 
 
 def main() -> None:
-    kokoro = Kokoro(str(MODEL_DIR / "kokoro-v1.0.onnx"), str(MODEL_DIR / "voices-v1.0.bin"))
     OUT.mkdir(parents=True, exist_ok=True)
     timing = {}
-    voice = load_voice(kokoro, VOICE)
-    for name, text, speed in LINES:
-        phonemes = kokoro.tokenizer.phonemize(text, "en-us")
-        for flapped in ("ˌæsɪmˈæɾɪk", "æsɪmˈæɾɪk", "ˌæsɪmˈætɪk"):
-            phonemes = phonemes.replace(flapped, BRAND_PHONEMES)
-        phonemes = phonemes.replace(f"tʊ {BRAND_PHONEMES}", f"{TO_PHONEMES} {BRAND_PHONEMES}")
-        # Brand lines never speed up past 1.0 so "Asematic Labs" stays crisp at any pace.
-        line_speed = min(speed * PACE, 1.0) if BRAND_PHONEMES in phonemes else speed * PACE
-        samples, sr = kokoro.create(phonemes, voice=voice, speed=line_speed, lang="en-us", is_phonemes=True)
-        audio = trim(pitch_shift(resample(samples.astype(np.float64), sr, SR_OUT), PITCH))
+    synth = vctk_engine() if ENGINE == "vctk" else kokoro_engine()
+    for name, text, _speed in LINES:
+        samples, sr, spoken = synth(name, text)
+        audio = trim(resample(np.asarray(samples, dtype=np.float64), sr, SR_OUT))
         # Short fades so no line starts or ends with a click.
         fade = int(0.01 * SR_OUT)
         audio[:fade] *= np.linspace(0, 1, fade)
         audio[-fade * 4 :] *= np.linspace(1, 0, fade * 4)
-        audio = compress(presence(audio / max(1e-9, np.max(np.abs(audio)))))
+        audio = presence(audio / max(1e-9, np.max(np.abs(audio))))
+        # The VCTK voice gets lighter compression: heavier settings lift the quiet gaps between
+        # words and smear consonants ("Labs" was heard as "clabse").
+        audio = compress(audio, threshold_db=-20, ratio=2.5, release=0.12) if ENGINE == "vctk" else compress(audio)
         meter = pyln.Meter(SR_OUT, block_size=0.2)
         audio = audio * 10 ** ((TARGET_LUFS - meter.integrated_loudness(audio)) / 20)
         audio = limit(audio)
         sf.write(OUT / f"{name}.wav", audio.astype(np.float32), SR_OUT, subtype="PCM_16")
-        timing[name] = {"text": text, "seconds": round(len(audio) / SR_OUT, 3), "phonemes": phonemes}
+        timing[name] = {"text": text, "seconds": round(len(audio) / SR_OUT, 3), "spoken": spoken}
         lufs = meter.integrated_loudness(audio)
         peak = 20 * np.log10(np.max(np.abs(audio)))
-        print(f"{name}: {timing[name]['seconds']:.2f}s  {lufs:.1f} LUFS  peak {peak:.1f} dBFS  {phonemes}")
+        print(f"{name}: {timing[name]['seconds']:.2f}s  {lufs:.1f} LUFS  peak {peak:.1f} dBFS  {spoken}")
 
     gen = ROOT / "src" / "generated"
     gen.mkdir(exist_ok=True)
-    (gen / "narration.json").write_text(json.dumps({"voice": VOICE, "pace": PACE, "pitch": PITCH, "lines": timing}, indent=2, ensure_ascii=False) + "\n")
+    meta = {"engine": ENGINE, "voice": VCTK_SPEAKER if ENGINE == "vctk" else VOICE, "lines": timing}
+    (gen / "narration.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
