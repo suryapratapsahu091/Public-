@@ -9,11 +9,20 @@ Setup (model files are ~350 MB and are not committed):
 Run from the project root:
     KOKORO_DIR=/path/to/model/files python3 scripts/make_narration.py
 
+Voice options (environment variables):
+    NARRATION_VOICE   a Kokoro voice, or a blend such as "hf_alpha:0.6+af_heart:0.4"
+    NARRATION_PACE    multiplies every line's speed (1.08 = 8% faster, more energetic)
+    NARRATION_PITCH   pitch shift in semitones, formant-preserving (needs ffmpeg with rubberband)
+    BRAND_PHONEMES    override the pronunciation of "Asematic"
+    TO_PHONEMES       how "to" is said before the brand: "tuː" (full, default) or "tʊ" (reduced)
+
 Each line is written as its own WAV so the composition can place it exactly on the scene
 timeline (see src/utils/timing.ts). Durations are written to src/generated/narration.json.
 """
 import json
 import os
+import subprocess
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +34,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "audio" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
 VOICE = os.environ.get("NARRATION_VOICE", "hf_alpha")  # female voice with an Indian English accent
+PACE = float(os.environ.get("NARRATION_PACE", "1.0"))
+PITCH = float(os.environ.get("NARRATION_PITCH", "0"))
 SR_OUT = 48000
 TARGET_LUFS = -16.0  # each line is levelled to this, so the mix gains in the composition are predictable
 
@@ -32,18 +43,46 @@ TARGET_LUFS = -16.0  # each line is levelled to this, so the mix gains in the co
 # Kokoro's default G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string
 # instead. Of ~15 readings tested with an offline speech recogniser, this is the one transcribed
 # as exactly "Asematic Labs". Change it here if the brand team prefers a different reading.
-BRAND_PHONEMES = "ɐsˈɛmætɪk"
+BRAND_PHONEMES = os.environ.get("BRAND_PHONEMES", "ɐsˈɛmætɪk")
+# A full "too" before the brand keeps "to Asematic" from blurring into "to a-sematic".
+TO_PHONEMES = os.environ.get("TO_PHONEMES", "tuː")
 # Brand lines are read slowest so "Asematic Labs" is unmistakable; the rest keeps a natural pace.
 BRAND_SPEED = 0.95
 
+# Exclamation marks lift the intonation for an upbeat, active read (on-screen text is unaffected).
 LINES = [
-    ("01-welcome", "Welcome to Asematic Labs.", BRAND_SPEED),
+    ("01-welcome", "Welcome to Asematic Labs!", BRAND_SPEED),
     ("02-learn", "Learn industry-ready skills,", 1.05),
     ("03-build", "build real-world projects,", 1.05),
-    ("04-turn", "and turn your potential into opportunity.", 1.05),
-    ("05-future", "Your future starts here.", 1.0),
-    ("06-launch", "Asematic Labs, now launching.", BRAND_SPEED),
+    ("04-turn", "and turn your potential into opportunity!", 1.05),
+    ("05-future", "Your future starts here!", 1.0),
+    ("06-launch", "Asematic Labs, now launching!", BRAND_SPEED),
 ]
+
+
+def load_voice(kokoro: Kokoro, spec: str):
+    """A single voice name, or a weighted blend: "hf_alpha:0.6+af_heart:0.4"."""
+    if "+" not in spec and ":" not in spec:
+        return spec
+    parts = [p.split(":") for p in spec.split("+")]
+    total = sum(float(w) for _, w in parts)
+    return sum(kokoro.get_voice_style(n) * (float(w) / total) for n, w in parts)
+
+
+def pitch_shift(x: np.ndarray, semitones: float) -> np.ndarray:
+    """Formant-preserving pitch shift through ffmpeg's rubberband filter (duration unchanged)."""
+    if abs(semitones) < 1e-3:
+        return x
+    with tempfile.TemporaryDirectory() as d:
+        src, dst = Path(d) / "in.wav", Path(d) / "out.wav"
+        sf.write(src, x.astype(np.float32), SR_OUT)
+        ratio = 2 ** (semitones / 12)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", str(src), "-af", f"rubberband=pitch={ratio}:formant=preserved:pitchq=quality", str(dst)],
+            check=True,
+        )
+        y, _ = sf.read(dst)
+    return y
 
 
 def resample(x: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
@@ -99,12 +138,16 @@ def main() -> None:
     kokoro = Kokoro(str(MODEL_DIR / "kokoro-v1.0.onnx"), str(MODEL_DIR / "voices-v1.0.bin"))
     OUT.mkdir(parents=True, exist_ok=True)
     timing = {}
+    voice = load_voice(kokoro, VOICE)
     for name, text, speed in LINES:
         phonemes = kokoro.tokenizer.phonemize(text, "en-us")
         for flapped in ("ˌæsɪmˈæɾɪk", "æsɪmˈæɾɪk", "ˌæsɪmˈætɪk"):
             phonemes = phonemes.replace(flapped, BRAND_PHONEMES)
-        samples, sr = kokoro.create(phonemes, voice=VOICE, speed=speed, lang="en-us", is_phonemes=True)
-        audio = trim(resample(samples.astype(np.float64), sr, SR_OUT))
+        phonemes = phonemes.replace(f"tʊ {BRAND_PHONEMES}", f"{TO_PHONEMES} {BRAND_PHONEMES}")
+        # Brand lines never speed up past 1.0 so "Asematic Labs" stays crisp at any pace.
+        line_speed = min(speed * PACE, 1.0) if BRAND_PHONEMES in phonemes else speed * PACE
+        samples, sr = kokoro.create(phonemes, voice=voice, speed=line_speed, lang="en-us", is_phonemes=True)
+        audio = trim(pitch_shift(resample(samples.astype(np.float64), sr, SR_OUT), PITCH))
         # Short fades so no line starts or ends with a click.
         fade = int(0.01 * SR_OUT)
         audio[:fade] *= np.linspace(0, 1, fade)
@@ -121,7 +164,7 @@ def main() -> None:
 
     gen = ROOT / "src" / "generated"
     gen.mkdir(exist_ok=True)
-    (gen / "narration.json").write_text(json.dumps({"voice": VOICE, "lines": timing}, indent=2, ensure_ascii=False) + "\n")
+    (gen / "narration.json").write_text(json.dumps({"voice": VOICE, "pace": PACE, "pitch": PITCH, "lines": timing}, indent=2, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
