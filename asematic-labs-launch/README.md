@@ -5,7 +5,7 @@ by Asematic Technologies Private Limited. Built entirely in code with Remotion, 
 vector graphics, UI mockups, synthesized score and sound design, and a locally generated voice-over.
 
 **Final render:** [`asematic-labs-launch.mp4`](asematic-labs-launch.mp4): H.264 High, yuv420p BT.709,
-AAC 320 kbps stereo, −16.1 LUFS integrated, −2.5 dBTP true peak.
+AAC 320 kbps stereo, −16.0 LUFS integrated, −3.5 dBTP true peak.
 
 ![Final frame](docs/final-frame.jpg)
 
@@ -117,7 +117,7 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 
   | Demo | Voice | Pace | Pitch |
   | --- | --- | --- | --- |
-  | 1 · energetic Indian (current) | `hf_alpha` | 1.08 | +1 |
+  | 1 · energetic Indian (**used in the final video**) | `hf_alpha` | 1.08 | +1 |
   | 2 · bright, youthful | `hf_alpha` | 1.12 | +2 |
   | 3 · warm, polished | `hf_alpha` 70% + `af_nova` 30% | 1.10 | +1 |
   | 4 · fresh, lively | `hf_alpha` 70% + `af_jessica` 30% | 1.10 | +1 |
@@ -141,9 +141,9 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 - **Sound effects**: also synthesized: rise, particle shimmer, logo hit, light sweep, whooshes, UI
   clicks, keyboard, confirmation tone, card placements, short riser, digital ambience.
 - **Mix** (`src/AsematicLabsLaunch.tsx`): music ducks ~14 dB under every spoken line with 6-frame ramps;
-  final master measures −16.1 LUFS, −2.5 dBTP. An offline Whisper (small.en) transcription of the
-  final mix returns the full script word for word. The current MP4 has not yet been re-rendered
-  with the new voice; see the demos above.
+  final master measures −16.0 LUFS, −3.5 dBTP. An offline Whisper (small.en) transcription of the
+  final mix returns the full script word for word. The final MP4 uses demo 1, and its soundtrack is
+  identical to `docs/voice-demos/demo-1-energetic-indian.m4a`.
 
 ## Replacing the temporary logo
 
