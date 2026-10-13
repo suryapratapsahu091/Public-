@@ -55,6 +55,7 @@ Requires Node.js 18+ (tested on Node 22.22, npm 10.9).
 npm install
 npm run dev          # Remotion Studio: preview and edit (each scene is also its own composition)
 npm run render       # → asematic-labs-launch.mp4 (full quality, ~1.5 min on 4 cores)
+npm run render:audio # → out/audio-preview.m4a (soundtrack only, to check the voice first)
 npm run render:preview   # → out/preview.mp4 at half resolution
 npm run lint         # eslint + tsc
 ```
@@ -103,30 +104,36 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
 ## Audio
 
 - **Voice-over**: generated locally with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0
-  model weights), voice **`hm_omega`**: a warm male voice with an Indian English accent. No paid API
-  or key. For clarity:
-  - The brand lines are read a little slower (speed 0.95).
-  - A presence EQ cuts low rumble and lifts the consonant band.
-  - The music ducks ~14 dB under every line.
-  - Each line is compressed and levelled to −16 LUFS.
+  model weights), using a female voice with an Indian English accent (`hf_alpha`, alone or blended).
+  No paid API or key. The read is energetic: about 8–12% faster than default, pitch raised 1–2
+  semitones (formant-preserving), and upbeat punctuation. A presence EQ, compression and −16 LUFS
+  levelling keep it clear, and the music ducks ~14 dB under every line.
 
-  "Asematic" is pronounced **"ASS-eh-MAT-ik"** (`ˌæsɛmˈætɪk`) through a phoneme override in
-  `scripts/make_narration.py`. Kokoro's default reading is "asi-MAD-ik", and "AY-seh-MAT-ik"
-  blurred into "Is somatic" with this voice. Change `BRAND_PHONEMES` if the brand team prefers
-  another reading.
+  "Asematic" is pronounced **"a-SEM-a-tik"** (`ɐsˈɛmætɪk`) via a phoneme override. The two brand
+  lines never go faster than speed 1.0, so the name stays crisp.
 
-  To try a different voice, listen to the samples in `docs/voice-samples/`, then run
-  `NARRATION_VOICE=<name> KOKORO_DIR=. npm run narration && npm run render`. If line lengths
-  change a lot, re-check the start frames in `src/utils/timing.ts`.
+  **Five voice demos** (full 15 s soundtrack: voice, music and effects) are in `docs/voice-demos/`.
+  An offline speech recogniser transcribes each one word for word, including "Asematic Labs":
+
+  | Demo | Voice | Pace | Pitch |
+  | --- | --- | --- | --- |
+  | 1 · energetic Indian (current) | `hf_alpha` | 1.08 | +1 |
+  | 2 · bright, youthful | `hf_alpha` | 1.12 | +2 |
+  | 3 · warm, polished | `hf_alpha` 70% + `af_nova` 30% | 1.10 | +1 |
+  | 4 · fresh, lively | `hf_alpha` 70% + `af_jessica` 30% | 1.10 | +1 |
+  | 5 · confident, polished | `hf_alpha` 70% + `bf_emma` 30% | 1.08 | +1 |
+
+  `KOKORO_DIR=... bash scripts/voice_demos.sh` rebuilds them all and leaves demo 1 as the current
+  narration. To use another demo, run its line from that script's `demo` list, then `npm run render`.
 
   | Line | Starts |
   | --- | --- |
-  | "Welcome to Asematic Labs." | 0.33 s |
+  | "Welcome to Asematic Labs!" | 0.33 s |
   | "Learn industry-ready skills," | 2.80 s |
   | "build real-world projects," | 5.33 s |
-  | "and turn your potential into opportunity." | 7.73 s |
-  | "Your future starts here." | 10.53 s |
-  | "Asematic Labs, now launching." | 12.40 s (ends ~14.7 s) |
+  | "and turn your potential into opportunity!" | 7.73 s |
+  | "Your future starts here!" | 10.53 s |
+  | "Asematic Labs, now launching!" | 12.40 s |
 
 - **Score**: original, synthesized in `scripts/make_audio.py`. D major at 120 BPM: a pad swell, a pluck
   arpeggio and a soft pulse from 2.5 s, a build with riser, a peak on Dmaj9 at 11.5 s with a four-note
@@ -135,8 +142,8 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
   clicks, keyboard, confirmation tone, card placements, short riser, digital ambience.
 - **Mix** (`src/AsematicLabsLaunch.tsx`): music ducks ~14 dB under every spoken line with 6-frame ramps;
   final master measures −16.1 LUFS, −2.5 dBTP. An offline Whisper (small.en) transcription of the
-  final mix returns the full script word for word. It spells the brand "Asymatic", as expected for
-  a non-dictionary word.
+  final mix returns the full script word for word. The current MP4 has not yet been re-rendered
+  with the new voice; see the demos above.
 
 ## Replacing the temporary logo
 

@@ -7,15 +7,18 @@
 set -euo pipefail
 mkdir -p docs/voice-demos
 
-demo() { # name voice pace pitch brand-phonemes to-phonemes
+demo() { # name voice pace pitch brand-phonemes to-phonemes brand-speed
   echo "== $1"
-  NARRATION_VOICE="$2" NARRATION_PACE="$3" NARRATION_PITCH="$4" BRAND_PHONEMES="$5" TO_PHONEMES="$6" \
+  NARRATION_VOICE="$2" NARRATION_PACE="$3" NARRATION_PITCH="$4" BRAND_PHONEMES="$5" TO_PHONEMES="$6" BRAND_SPEED="$7" \
     python3 scripts/make_narration.py
   npx remotion render AsematicLabsLaunch "docs/voice-demos/$1.m4a" --codec=aac --log=error
 }
 
-demo "demo-1-energetic-indian"  "hf_alpha"                   1.08 1 "ɐsˈɛmætɪk"  "tuː"
-demo "demo-2-bright-youthful"   "hf_alpha"                   1.12 2 "ɐsˈɛːmætɪk" "tʊ"
-demo "demo-3-warm-polished"     "hf_alpha:0.7+af_nova:0.3"   1.1  1 "ɐsˈɛmætɪk"  "tuː"
-demo "demo-4-fresh-lively"      "hf_alpha:0.7+af_sky:0.3"    1.1  1 "ɐsˈɛmætɪk"  "tuː"
-demo "demo-5-confident-host"    "hf_beta:0.6+af_nova:0.4"    1.08 1 "ɐsˈɛmætɪk"  "tuː"
+# Pronunciation settings per voice were chosen by checking that an offline speech recogniser hears
+# "Asematic Labs" in both brand lines of the finished 15 s soundtrack (voice + music + effects).
+demo "demo-2-bright-youthful"   "hf_alpha"                    1.12 2 "ɐsˈɛmætɪk" "tʊ"  0.95
+demo "demo-3-warm-polished"     "hf_alpha:0.7+af_nova:0.3"   1.1  1 "ɐsˈɛmætɪk" "tʊ"  0.9
+demo "demo-4-fresh-lively"      "hf_alpha:0.7+af_jessica:0.3" 1.1  1 "ɐsˈɛmætɪk" "tʊ"  0.95
+demo "demo-5-confident-polished" "hf_alpha:0.7+bf_emma:0.3"  1.08 1 "ɐsˈɛmætɪk" "tuː" 0.95
+# Demo 1 runs last so the project is left with it as the current narration.
+demo "demo-1-energetic-indian"  "hf_alpha"                   1.08 1 "ɐsˈɛmætɪk" "tuː" 0.95
