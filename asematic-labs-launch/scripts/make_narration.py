@@ -82,7 +82,7 @@ LINES = [
     ("01-welcome", "Welcome to Asematic Labs!", BRAND_SPEED),
     ("02-learn", "Learn industry-ready skills,", 1.05),
     ("03-build", "build real-world projects,", 1.05),
-    ("04-turn", "and turn your potential into opportunity!", 1.05),
+    ("04-turn", "and turn your potential into opportunity!", 0.9),  # slower: the longest, densest line
     ("05-future", "Your future starts here!", 1.0),
     ("06-launch", "Asematic Labs, now launching!", BRAND_SPEED),
 ]
