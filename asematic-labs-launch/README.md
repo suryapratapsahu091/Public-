@@ -123,8 +123,8 @@ Python tooling (only for regenerating audio): numpy, scipy, soundfile, pyloudnor
   | "Welcome to Asematic Labs." | 0.33 s |
   | "Learn industry-ready skills," | 2.80 s |
   | "build real-world projects," | 5.33 s |
-  | "and turn your potential into opportunity!" | 7.73 s |
-  | "Your future starts here!" | 10.53 s |
+  | "and turn your potential into opportunity!" | 7.53 s |
+  | "Your future starts here!" | 10.60 s |
   | "Asematic Labs, now launching." | 12.40 s |
 
 - **Score**: original, synthesized in `scripts/make_audio.py`. D major at 120 BPM: a pad swell, a pluck

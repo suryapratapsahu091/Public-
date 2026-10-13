@@ -88,6 +88,13 @@ LINES = [
 ]
 
 
+# Hand-tuned Kokoro phonemes for lines whose default reading is rushed. "And turn" was swallowed at
+# the start of line 4, so "And" is stressed and a short pause follows "turn".
+KOKORO_PHONEMES = {
+    "04-turn": "ˈænd tˈɜːn, jʊɹ pətˈɛnʃəl ˌɪntʊ ɑːpɚtˈuːnᵻɾi!",
+}
+
+
 # Plain spellings for the VCTK lexicon (it has no hyphenated compounds); calm full stops on the
 # brand lines keep "Labs" crisp.
 VCTK_TEXT = {
@@ -166,7 +173,7 @@ def kokoro_engine():
     speeds = {name: speed for name, _, speed in LINES}
 
     def synth(name, text):
-        phonemes = kokoro.tokenizer.phonemize(text, "en-us")
+        phonemes = KOKORO_PHONEMES.get(name) or kokoro.tokenizer.phonemize(text, "en-us")
         for flapped in ("ˌæsɪmˈæɾɪk", "æsɪmˈæɾɪk", "ˌæsɪmˈætɪk"):
             phonemes = phonemes.replace(flapped, BRAND_PHONEMES)
         phonemes = phonemes.replace(f"tʊ {BRAND_PHONEMES}", f"{TO_PHONEMES} {BRAND_PHONEMES}")

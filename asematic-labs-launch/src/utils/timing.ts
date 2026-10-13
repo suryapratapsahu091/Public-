@@ -42,7 +42,7 @@ export const NARRATION = [
   line("01-welcome", 10), //  0.33 s  "Welcome to Asematic Labs."
   line("02-learn", 84), //    2.80 s  "Learn industry-ready skills,"
   line("03-build", 160), //   5.33 s  "build real-world projects,"
-  line("04-turn", 232), //    7.73 s  "and turn your potential into opportunity."
-  line("05-future", 316), // 10.53 s  "Your future starts here."
+  line("04-turn", 226), //    7.53 s  "and turn your potential into opportunity."
+  line("05-future", 318), // 10.60 s  "Your future starts here."
   line("06-launch", 372), // 12.40 s  "Asematic Labs, now launching."  (ends ~14.67 s)
 ];
