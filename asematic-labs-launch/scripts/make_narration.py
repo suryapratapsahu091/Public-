@@ -1,9 +1,9 @@
 """Generates the voice-over lines in public/audio/narration/ with open neural TTS models that run
 locally (no API key or paid service).
 
-Default engine "vctk": a VITS model trained on the VCTK English corpus, speaker p248 (a young
-Indian woman reading English), run through sherpa-onnx. It pronounces every English word clearly.
-Alternative engine "kokoro": Kokoro-82M (Apache-2.0), used for the earlier voice demos.
+Default engine "kokoro": Kokoro-82M (Apache-2.0) with the af_heart voice, read slightly slower with
+a corrected brand pronunciation. Alternative engine "vctk": a VITS model trained on the VCTK English
+corpus, speaker p248 (a young Indian woman reading English), run through sherpa-onnx.
 
 Setup (model files are not committed):
     pip install sherpa-onnx soundfile numpy scipy pyloudnorm          # vctk engine
@@ -14,8 +14,8 @@ Setup (model files are not committed):
     curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 
 Run from the project root:
-    VCTK_DIR=/path/to/vits-vctk python3 scripts/make_narration.py
-    NARRATION_ENGINE=kokoro KOKORO_DIR=/path/to/kokoro/files python3 scripts/make_narration.py
+    KOKORO_DIR=/path/to/kokoro/files python3 scripts/make_narration.py
+    NARRATION_ENGINE=vctk VCTK_DIR=/path/to/vits-vctk python3 scripts/make_narration.py
 
 VCTK options (environment variables):
     VCTK_SPEAKER      VCTK speaker id (default p248)
@@ -45,7 +45,7 @@ import pyloudnorm as pyln
 import soundfile as sf
 
 ROOT = Path(__file__).resolve().parent.parent
-ENGINE = os.environ.get("NARRATION_ENGINE", "vctk")
+ENGINE = os.environ.get("NARRATION_ENGINE", "kokoro")
 VCTK_DIR = Path(os.environ.get("VCTK_DIR", "vits-vctk"))
 VCTK_SPEAKER = os.environ.get("VCTK_SPEAKER", "p248")
 VCTK_SPEED = float(os.environ.get("VCTK_SPEED", "0.9"))
@@ -62,19 +62,18 @@ VCTK_SPEAKERS = (
 ).split()
 OUT = ROOT / "public" / "audio" / "narration"
 MODEL_DIR = Path(os.environ.get("KOKORO_DIR", "."))
-VOICE = os.environ.get("NARRATION_VOICE", "hf_alpha")  # female voice with an Indian English accent
-PACE = float(os.environ.get("NARRATION_PACE", "1.0"))
+VOICE = os.environ.get("NARRATION_VOICE", "af_heart")  # clear international English female voice
+PACE = float(os.environ.get("NARRATION_PACE", "0.95"))  # a touch slower for clear diction
 PITCH = float(os.environ.get("NARRATION_PITCH", "0"))
 SR_OUT = 48000
 TARGET_LUFS = -16.0  # each line is levelled to this, so the mix gains in the composition are predictable
 
-# "Asematic" -> "a-SEM-a-tik": stress on SEM with a full "e", so it is not heard as "Asymatic".
-# Kokoro's default G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string
-# instead. Of ~15 readings tested with an offline speech recogniser, this is the one transcribed
-# as exactly "Asematic Labs". Change it here if the brand team prefers a different reading.
-BRAND_PHONEMES = os.environ.get("BRAND_PHONEMES", "ɐsˈɛmætɪk")
+# "Asematic" -> "a-SEM-uh-tik": stress on SEM so the "se" is clearly heard, and a light, unstressed
+# "-ma-" (a stressed "ass-eh-MAT-ik" swallowed the "se" and sounded like "AsemAtic"). Kokoro's
+# default G2P says "asi-MAD-ik"; the brand name is pronounced from this phoneme string instead.
+BRAND_PHONEMES = os.environ.get("BRAND_PHONEMES", "ɐsˈɛmətɪk")
 # A full "too" before the brand keeps "to Asematic" from blurring into "to a-sematic".
-TO_PHONEMES = os.environ.get("TO_PHONEMES", "tuː")
+TO_PHONEMES = os.environ.get("TO_PHONEMES", "tʊ")
 # Brand lines are read slowest so "Asematic Labs" is unmistakable; the rest keeps a natural pace.
 BRAND_SPEED = float(os.environ.get("BRAND_SPEED", "0.95"))
 
@@ -266,9 +265,9 @@ def main() -> None:
         audio[:fade] *= np.linspace(0, 1, fade)
         audio[-fade * 4 :] *= np.linspace(1, 0, fade * 4)
         audio = presence(audio / max(1e-9, np.max(np.abs(audio))))
-        # The VCTK voice gets lighter compression: heavier settings lift the quiet gaps between
-        # words and smear consonants ("Labs" was heard as "clabse").
-        audio = compress(audio, threshold_db=-20, ratio=2.5, release=0.12) if ENGINE == "vctk" else compress(audio)
+        # Light compression: heavier settings lift the quiet gaps between words and smear
+        # consonants ("Labs" was heard as "clabse").
+        audio = compress(audio, threshold_db=-20, ratio=2.5, release=0.12)
         meter = pyln.Meter(SR_OUT, block_size=0.2)
         audio = audio * 10 ** ((TARGET_LUFS - meter.integrated_loudness(audio)) / 20)
         audio = limit(audio)

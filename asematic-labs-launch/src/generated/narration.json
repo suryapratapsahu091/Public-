@@ -1,36 +1,36 @@
 {
-  "engine": "vctk",
-  "voice": "p248",
+  "engine": "kokoro",
+  "voice": "af_heart",
   "lines": {
     "01-welcome": {
       "text": "Welcome to Asematic Labs!",
-      "seconds": 1.475,
-      "spoken": "Welcome to Asematic Labs."
+      "seconds": 1.72,
+      "spoken": "wˈɛlkʌm tʊ ɐsˈɛmətɪk lˈæbz!"
     },
     "02-learn": {
       "text": "Learn industry-ready skills,",
-      "seconds": 1.68,
-      "spoken": "Learn industry ready skills,"
+      "seconds": 1.48,
+      "spoken": "lˈɜːn ˈɪndʌstɹiɹˈɛdi skˈɪlz,"
     },
     "03-build": {
       "text": "build real-world projects,",
-      "seconds": 1.649,
-      "spoken": "build real world projects,"
+      "seconds": 1.618,
+      "spoken": "bˈɪld ɹˈiːəlwˈɜːld pɹˈɑːdʒɛkts,"
     },
     "04-turn": {
       "text": "and turn your potential into opportunity!",
-      "seconds": 2.296,
-      "spoken": "and turn your potential into opportunity!"
+      "seconds": 1.971,
+      "spoken": "ænd tˈɜːn jʊɹ pətˈɛnʃəl ˌɪntʊ ɑːpɚtˈuːnᵻɾi!"
     },
     "05-future": {
       "text": "Your future starts here!",
-      "seconds": 1.217,
-      "spoken": "Your future starts here!"
+      "seconds": 1.296,
+      "spoken": "jʊɹ fjˈuːtʃɚ stˈɑːɹts hˈɪɹ!"
     },
     "06-launch": {
       "text": "Asematic Labs, now launching!",
-      "seconds": 1.888,
-      "spoken": "Asematic Labs, now launching."
+      "seconds": 1.871,
+      "spoken": "ɐsˈɛmətɪk lˈæbz, nˈaʊ lˈɑːntʃɪŋ!"
     }
   }
 }
